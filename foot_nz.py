@@ -16,6 +16,7 @@ import multiprocessing as mp
 from scipy.interpolate import interp1d
 import numpy as np
 import healpy as hp
+from itertools import product
 
 from astropy.io import fits
 #from desimodel.io import fits
@@ -27,10 +28,10 @@ import fitsio
 
 
 def bits(ask="try"):
-	if ask == "LC": return 0
-	if ask == "downsample": return 1
-	if ask == "entireDESIfoot": return 2
-	if ask == "SV3foot": return 4
+	if ask == "LC": return 0  #(0 0 0)
+	if ask == "downsample": return 1 #(0 0 1)
+	if ask == "entireDESIfoot": return 2 #(0 1 0)
+	if ask == "SV3foot": return 4 #(1 0 0)
 	sys.exit()
 
 def combine_shells(path_instance):
@@ -56,18 +57,18 @@ def combine_shells(path_instance):
 		shells.append(Table.read(file_))
 	
 	joint_table = vstack(shells)
-	joint_table.write(out_file_beg  + path_instance.end_combined_file)
+	joint_table.write(out_file_beg + path_instance.end_combined_file)
 	print("TIME: It took {} seconds to combine all shells.".format(time.time()-start_time))
 		
 def nz_oneperc(zz, nz_pars):
 	if nz_pars['galtype'] == "lrg":
-		z, nz = np.loadtxt("./nz_sv3/sm_LRG_mycosmo_v0.1.dat", usecols=(0,1), unpack=True)
-		failurerate = 0.01
+		z, nz = np.loadtxt("./nz_sv3/sm_LRG_mycosmo_v1.0.dat", usecols=(0,1), unpack=True)
+		failurerate = 0
 	elif nz_pars['galtype'] == "elgS":
-		z, nz = np.loadtxt("./nz_sv3/sm_ELG_mycosmo_zS0.6_v0.1.dat", usecols=(0,1), unpack=True)
+		z, nz = np.loadtxt("./nz_sv3/sm_ELG_mycosmo_zS0.6_v1.0.dat", usecols=(0,1), unpack=True)
 		failurerate = 0.25
 	elif nz_pars['galtype'] == "elg":
-		z, nz = np.loadtxt("./nz_sv3/sm_ELG_mycosmo_zL0.6_v0.1.dat", usecols=(0,1), unpack=True)
+		z, nz = np.loadtxt("./nz_sv3/sm_ELG_mycosmo_zL0.6_v1.0.dat", usecols=(0,1), unpack=True)
 		failurerate = 0.25
 	elif nz_pars['galtype'] == "qso":
 		z, nz = np.loadtxt("./nz_sv3/sm_QSO.dat", usecols=(0,1), unpack=True)
@@ -95,18 +96,14 @@ def nz_oneperc(zz, nz_pars):
 
 	# nzint = interp1d(z_n, nz_n, fill_value=(0,0))
 
-	np.savetxt("./nz_sv3/" + nz_pars['galtype'] + "_sm_nz__mycosmo_redcor_v0.1.txt", np.array([z_n, nz_n]).T)
+	np.savetxt("./nz_sv3/" + nz_pars['galtype'] + "_sm_nz_mycosmo_redcor_v1.0.txt", np.array([z_n, nz_n]).T)
 	# return nzint(zz)
 	return np.interp(zz, z_n, nz_n, left=0, right=0)
 
-def downsample(file_, boxL, nz_pars):
+def downsample(file_, boxL, nz_pars, ngalbox, z_cosmo):
 	""" downsample galaxies following n(z) model specified in nz_pars """
 
-	print(file_)
-	fits = fitsio.FITS(file_,'rw')
-	z_cosmo = fits[1].read_column("Z_COSMO")
-	hdr = fits[1].read_header()
-	n_mean = hdr["NGAL"]/(boxL**3)
+	n_mean = ngalbox/(boxL**3)
 	nz         = nz_oneperc(z_cosmo, nz_pars)
 
 	# downsample
@@ -116,31 +113,16 @@ def downsample(file_, boxL, nz_pars):
 
 	print("Selected {} out of {} galaxies.".format(len(idx[0]), len(z_cosmo)))
 
-	newbits = np.zeros(len(z_cosmo), dtype=np.int32)
 	bitval = bits(ask="downsample")
+	
+	newbits = np.zeros(len(z_cosmo), dtype=np.int32)
 	newbits[idx] = bitval
 
-	if "STATUS" in fits[1].get_colnames():
-		print("STATUS EXISTS")
-		status = fits[1].read_column("STATUS")
-		out_type=[('STATUS', np.int32)]
-		out_arr = np.bitwise_or(status, newbits)
-		out_arr = out_arr.astype(out_type)
-		print(out_arr.dtype)
-		fits[1].write(out_arr)
-	else:
-		fits[1].insert_column('STATUS', newbits)
+	return newbits
 
-
-def apply_footprint(file_, fullfootprint):
+def apply_footprint(file_, ra, dec, fullfootprint):
 	""" apply desi footprint """
 	
-	print(file_)
-	fits = fitsio.FITS(file_,'rw')
-	ra = fits[1].read_column("RA")
-	dec = fits[1].read_column("DEC")
-	
-	newbits = np.zeros(len(ra), dtype=np.int32)
 	bitval = 0
 	# fullfootprint possibilities
 	# 0 - Full DESI, 1 - old 1%, 2 - new 1%
@@ -158,24 +140,74 @@ def apply_footprint(file_, fullfootprint):
 		exit()
 	
 	idx   = np.where(point)
-
+	print("Selected {} out of {} galaxies.".format(len(idx[0]), len(ra)))
+	
+	newbits = np.zeros(len(ra), dtype=np.int32)
 	newbits[idx] = bitval
 
-	print("Selected {} out of {} galaxies.".format(len(idx[0]), len(ra)))
+	return newbits
 
-	if "STATUS" in fits[1].get_colnames():
+def generate_shell(args):
+	file_, boxL, nz_pars, fullfootprint, todo = args
+	print(file_)
+	# fits = fitsio.FITS(file_,'rw')
+	# ra = fits[1].read_column("RA")
+	# dec = fits[1].read_column("DEC")
+	# z_cosmo = fits[1].read_column("Z_COSMO")
+	
+	f = h5py.File(file_, 'r+')
+	data = f['galaxy']
+	ra = data['RA'][()]
+	dec = data['DEC'][()]
+	z_cosmo = data['Z_COSMO'][()]
+			
+	start = time.time()
+
+	# hdr = fits[1].read_header()
+	
+	
+	if todo == 0:
+		out_arr = apply_footprint(file_, ra, dec, fullfootprint)
+	elif todo == 1:
+		out_arr = downsample(file_, boxL, nz_pars, f.attrs["NGAL"], z_cosmo)
+	elif todo == 2:
+		foot_bit = apply_footprint(file_, ra, dec, fullfootprint)
+		down_bit = downsample(file_, boxL, nz_pars, f.attrs["NGAL"], z_cosmo)
+		out_arr = np.bitwise_or(foot_bit, down_bit)
+
+	# out_type=[('STATUS', np.int32)]
+	out_arr = out_arr.astype(np.int32)
+	print("TIME: It took {} seconds to get the bits.".format(time.time()-start))
+	
+	start = time.time()
+	# if "STATUS" in fits[1].get_colnames():
+	# 	print("STATUS EXISTS")
+	# 	# status = fits[1].read_column("STATUS")
+		
+	# 	# fits[1].write(out_arr)
+	# else:
+	# 	fits[1].insert_column('STATUS', out_arr)
+
+	# fits.close()
+	
+	if "STATUS" in data.keys():
 		print("STATUS EXISTS")
-		status = fits[1].read_column("STATUS")
-		out_type=[('STATUS', np.int32)]
-		out_arr = np.bitwise_or(status, newbits)
-		out_arr = out_arr.astype(out_type)
-		print(out_arr.dtype)
-		fits[1].write(out_arr)
+		# status = fits[1].read_column("STATUS")
+		new_arr = np.bitwise_or(data["STATUS"][:], out_arr)
+		new_arr = new_arr.astype(np.int32)
+		print(np.unique(new_arr))
+		data["STATUS"][:] = new_arr[:]
+
+		# fits[1].write(out_arr)
 	else:
-		fits[1].insert_column('STATUS', newbits)
+		f.create_dataset('galaxy/STATUS', data=out_arr,  dtype=np.int32)
+
+	f.close()
+	print("TIME: It took {} seconds to insert the column the bits.".format(time.time()-start), flush=True)
+
 
 class FOOT_NZ():
-	def __init__(self, config_file, args, galtype = "elg"):
+	def __init__(self, config_file, args, galtype = None):
 		config     = configparser.ConfigParser()
 		config.read(config_file)
 
@@ -193,24 +225,34 @@ class FOOT_NZ():
 		self.nz_par = nz_par
 	
 	def shell(self, path_instance, nproc=5, fullfootprint=0, todo=1):
-		start = time.time()
 		
-		infiles = glob.glob(path_instance.shells_out_path + "/*fits")
+		infiles = glob.glob(path_instance.shells_out_path + "/*.h5py")
 
-		counter = 0
-		jobs = []
-		print(len(infiles))
-		for file_ in infiles:
-			if todo == 0:
-				p = mp.Process(target=apply_footprint, args=(file_, fullfootprint))
-			elif todo == 1:
-				p = mp.Process(target=downsample, args=(file_, self.boxL, self.nz_par))
+		args = product(infiles, [self.boxL], [self.nz_par], [fullfootprint], [todo])
+		# counter = 0
+		# jobs = []
+		# print(len(infiles))
+		# for file_ in infiles:
+		# 	p = mp.Process(target=generate_shell, args=(file_, self.boxL, self.nz_par, fullfootprint, todo))
+		# 	jobs.append(p)
+		# 	p.start()
+		# 	counter = counter + 1
+		# 	if (counter == nproc):
+		# 		for proc in jobs:
+		# 			proc.join()
+		# 		counter = 0
+		# 		jobs = []
+		# try:
+
+
+		pool = mp.Pool(processes=nproc)
 	
-			jobs.append(p)
-			p.start()
-			counter = counter + 1
-			if (counter == nproc):
-				for proc in jobs:
-					proc.join()
-				counter = 0
-				jobs = []
+		pool.map_async(generate_shell, args)
+		
+		pool.close()
+		pool.join()
+
+		# except:
+			# print("Nu merge")
+		# with mp.Pool(processes=nproc) as pool:
+		# 	pool.map_async(generate_shell, args)

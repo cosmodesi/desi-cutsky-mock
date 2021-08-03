@@ -93,7 +93,7 @@ class Paths_LC():
 		return out_path
 
 class LC():
-	def __init__(self, config_file, args, galtype = "elg"):
+	def __init__(self, config_file, args):
 		config     = configparser.ConfigParser()
 		config.read(config_file)
 
@@ -109,15 +109,6 @@ class LC():
 		
 		file_alist     =  config.get('dir','file_alist')
 		self.alist = np.loadtxt(file_alist)
-
-		nz_par = dict()
-
-		nz_par["galtype"]       = galtype
-		nz_par["zmin"]          = config.getfloat(f'{galtype}', 'zmin', fallback=self.zmin)
-		nz_par["zmax"]          = config.getfloat(f'{galtype}', 'zmax', fallback=self.zmax)
-		nz_par["galtype_index"] = config.getint(f'{galtype}', 'sample_index')
-	
-		self.nz_par = nz_par
 
 	def run_camb(self):
 		#Load all parameters from camb file 
@@ -331,7 +322,7 @@ class LC():
 
 			out_file_beg = out_file_beg.format(snapshot, "all")
 			# Don't reprocess files already done
-			if os.path.isfile(out_file_beg+".fits"):
+			if os.path.isfile(out_file_beg+".h5py"):
 				continue
 		
 			return_dict = manager.dict()
@@ -366,21 +357,41 @@ class LC():
 				py0_array = np.concatenate((py0_array, shell_subbox_dict["py0"]))
 				pz0_array = np.concatenate((pz0_array, shell_subbox_dict["pz0"]))
 			
-			out_type=[('RA',np.float64),('DEC',np.float64), ('Z_COSMO',np.float64), ('Z_RSD',np.float64), ('PX',np.float64), ('PY',np.float64), ('PZ',np.float64)]
-			outarr=np.zeros(ra0_array.size, dtype=out_type)
-			outarr['RA']=ra0_array
-			outarr['DEC']=dec0_array
-			outarr['Z_COSMO']=zz0_array
-			outarr['Z_RSD']=zz_rsd0_array
-			outarr['PX']=px0_array
-			outarr['PY']=py0_array
-			outarr['PZ']=pz0_array
+			
+			start = time.time()
+			out_file_tmp = out_file_beg + "_tmp.h5py"
+			out_file 	 = out_file_beg + ".h5py"
 
-			with fitsio.FITS(out_file_beg+".fits",'rw') as fout:
-				fout.write(outarr)
-		        fout[-1].write_key("NGAL", return_dict["NGAL"])
+			with h5py.File(out_file_tmp, 'w') as ff:
+				ff.create_group('galaxy')
+				ff.create_dataset('galaxy/RA',      data=ra0_array,    dtype=np.float32)
+				ff.create_dataset('galaxy/DEC',     data=dec0_array,   dtype=np.float32)
+				ff.create_dataset('galaxy/Z_RSD', 	  data=zz_rsd0_array, dtype=np.float32)
+				ff.create_dataset('galaxy/Z_COSMO', data=zz0_array,     dtype=np.float32)
+				ff.create_dataset('galaxy/PX', data=px0_array,     dtype=np.float32)
+				ff.create_dataset('galaxy/PY', data=py0_array,     dtype=np.float32)
+				ff.create_dataset('galaxy/PZ', data=pz0_array,     dtype=np.float32)
+				ff.attrs['NGAL'] = return_dict["NGAL"]
 
-				fout[-1].write_checksum()
+			print("TIME: h5py, It took {} seconds to write the file.".format(time.time()-start))
+
+			os.rename(out_file_tmp, out_file)
+
+			# out_type=[('RA',np.float64),('DEC',np.float64), ('Z_COSMO',np.float64), ('Z_RSD',np.float64), ('PX',np.float64), ('PY',np.float64), ('PZ',np.float64)]
+			# outarr=np.zeros(ra0_array.size, dtype=out_type)
+			# outarr['RA']=ra0_array
+			# outarr['DEC']=dec0_array
+			# outarr['Z_COSMO']=zz0_array
+			# outarr['Z_RSD']=zz_rsd0_array
+			# outarr['PX']=px0_array
+			# outarr['PY']=py0_array
+			# outarr['PZ']=pz0_array
+
+			# with fitsio.FITS(out_file_beg+".fits",'rw') as fout:
+			# 	fout.write(outarr)
+			# 	fout[-1].write_key("NGAL", return_dict["NGAL"])
+
+			# 	fout[-1].write_checksum()
 
 			# fits = fitsio.FITS(out_file_beg+".fits", "rw")
 			# fits.write(np.array([ra0_array, dec0_array, zz0_array, zz_rsd0_array, px0_array, py0_array, pz0_array]), names=["ra","dec","z_cosmo","z_rsd", "px", "py", "pz"])
