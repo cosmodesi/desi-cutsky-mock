@@ -223,10 +223,11 @@ class LC():
 
 	def getnearestsnap(self, zmid):
 		""" get the closest snapshot """
-		zsnap  = 1/self.alist[:,1]-1.
+		# zsnap  = 1/self.alist[:,1]-1.
+		zsnap  = 1/self.alist[:,2]-1.
 		return self.alist[np.argmin(np.abs(zsnap-zmid)),0]
 
-	def obtain_data(self, subbox, shellnum, shellnums, snapshot, cutsky, path_instance):
+	def obtain_data(self, subbox, shellnum, shellnums, snapshot, cutsky, path_instance, random):
 		start = time.time()
 		preffix = f"[shellnum={shellnum}; subbox={subbox}] "
 
@@ -261,27 +262,26 @@ class LC():
 		print(f"Current memory usage is {current / 10**6}MB; Peak was {peak_ / 10**6}MB")
 		print("TIME: It took {} seconds to read the fits file.".format(time.time()-start))
 
-
-			# def create_random(self, seed=42, ntimes=10):
-			# np.random.seed(seed)
-			# length = ntimes*len(self.d)
-			# px    = np.random.uniform(low=0, high=self.boxL, size=length) #self.d[idx,0]
-			# py    = np.random.uniform(low=0, high=self.boxL, size=length) #self.d[idx,1]
-			# pz    = np.random.uniform(low=0, high=self.boxL, size=length) #self.d[idx,2]
-			# vx 	= np.zeros(length)
-			# vy 	= np.zeros(length)
-			# vz 	= np.zeros(length)
-			# dr = np.vstack((px, py, pz, vx, vy, vz))
-			# print(dr.T.shape)
-			# return dr.T
+		if random != None:
+			print("ATTENTION: Compute random catalogs!")
+			np.random.seed(int(random + 100*subbox + 10000*shellnum))
+			data_r = {}
+			length = len(data["x"])
+			data_r["x"]    = np.random.uniform(low=0, high=self.boxL, size=length) #self.d[idx,0]
+			data_r["y"]    = np.random.uniform(low=0, high=self.boxL, size=length) #self.d[idx,1]
+			data_r["z"]    = np.random.uniform(low=0, high=self.boxL, size=length) #self.d[idx,2]
+			data_r["vx"] 	= np.zeros(length)
+			data_r["vy"] 	= np.zeros(length)
+			data_r["vz"] 	= np.zeros(length)
+			return data_r, preffix, chilow, chiupp
 
 		return data, preffix, chilow, chiupp
 
-	def generate_shell(self, subbox, i, shellnum, shellnums, snapshot, cutsky, path_instance, return_dict):
+	def generate_shell(self, subbox, i, shellnum, shellnums, snapshot, cutsky, path_instance, random, return_dict):
 		start_time = time.time()
 
 		### Read Data
-		data, preffix, chilow, chiupp = self.obtain_data(subbox, shellnum, shellnums, snapshot, cutsky, path_instance)
+		data, preffix, chilow, chiupp = self.obtain_data(subbox, shellnum, shellnums, snapshot, cutsky, path_instance, random)
 		
 		### Convert XYZ to RA DEC Z
 		px0, py0, pz0, ra0, dec0, zz0, zz_rsd0, ngalbox = self.convert_xyz2rdz(data, preffix, chilow, chiupp)
@@ -301,7 +301,7 @@ class LC():
 		print("TIME: It took {} seconds to run compute the shellnums.".format(time.time()-start))
 		return shellnums
 
-	def generate_shells(self, path_instance, snapshot=999, cutsky=True, nproc=5, Nsubboxes=27):
+	def generate_shells(self, path_instance, snapshot=999, cutsky=True, nproc=5, Nsubboxes=27, random=None):
 		jobs = []
 		ne.set_num_threads(4)
 		manager = mp.Manager()
@@ -329,7 +329,7 @@ class LC():
 			return_dict["NGAL"]  = 0	
 			counter = 0
 			for subbox in range(Nsubboxes):
-				p = mp.Process(target=self.generate_shell, args=(subbox, i, shellnum, shellnums, snapshot, cutsky, path_instance, return_dict))
+				p = mp.Process(target=self.generate_shell, args=(subbox, i, shellnum, shellnums, snapshot, cutsky, path_instance, random, return_dict))
 				jobs.append(p)
 				p.start()
 				counter = counter + 1

@@ -68,11 +68,13 @@ def nz_oneperc(zz, nz_pars):
 		z, nz = np.loadtxt("./nz_sv3/sm_ELG_mycosmo_zS0.6_v1.0.dat", usecols=(0,1), unpack=True)
 		failurerate = 0.25
 	elif nz_pars['galtype'] == "elg":
-		z, nz = np.loadtxt("./nz_sv3/sm_ELG_mycosmo_zL0.6_v1.0.dat", usecols=(0,1), unpack=True)
+		z, nz = np.loadtxt("./nz_sv3/sm_ELG_mycosmo_v1.0.dat", usecols=(0,1), unpack=True)
 		failurerate = 0.25
 	elif nz_pars['galtype'] == "qso":
-		z, nz = np.loadtxt("./nz_sv3/sm_QSO.dat", usecols=(0,1), unpack=True)
-		failurerate = 0.15
+		z, nz = np.loadtxt("./nz_sv3/sm_QSO_mycosmo_v1.0.dat", usecols=(0,1), unpack=True)
+		failurerate = 0.24
+	elif nz_pars['galtype'] == "bgs":
+		z, nz = np.loadtxt("./nz_sv3/sm_BGS_mycosmo_v1.0.dat", usecols=(0,1), unpack=True)
 	else:
 		raise RuntimeError("Unknown galaxy type.")
 

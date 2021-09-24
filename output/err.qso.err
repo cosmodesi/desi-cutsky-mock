@@ -1,0 +1,16 @@
+[shellnum=122; subbox=62] WARNING: Couldn't open /global/cfs/cdirs/desi/cosmosim/mocks_SV3/v1/ABACUS/ABACUS_Gcat_FITS/QSO_snap10.gcat.sub62.fits.
+[shellnum=122; subbox=61] WARNING: Couldn't open /global/cfs/cdirs/desi/cosmosim/mocks_SV3/v1/ABACUS/ABACUS_Gcat_FITS/QSO_snap10.gcat.sub61.fits.
+[shellnum=122; subbox=63] WARNING: Couldn't open /global/cfs/cdirs/desi/cosmosim/mocks_SV3/v1/ABACUS/ABACUS_Gcat_FITS/QSO_snap10.gcat.sub63.fits.
+Traceback (most recent call last):
+  File "main_qso.py", line 60, in <module>
+    main()
+  File "main_qso.py", line 56, in main
+    qso_LC_ABACUS(args)
+  File "main_qso.py", line 31, in qso_LC_ABACUS
+    lc_instance.generate_shells(path_instance, snapshot=None, cutsky=False, nproc=20, Nsubboxes=64)
+  File "/global/u2/a/avariu/phd/desicodes/generate_survey_mocks/generate_lc.py", line 351, in generate_shells
+    shell_subbox_dict = return_dict[subbox]
+  File "<string>", line 2, in __getitem__
+  File "/global/homes/a/avariu/.conda/envs/desilightcone/lib/python3.6/multiprocessing/managers.py", line 772, in _callmethod
+    raise convert_to_error(kind, result)
+KeyError: 61
