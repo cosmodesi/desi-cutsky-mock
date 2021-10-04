@@ -28,7 +28,8 @@ def lrg_LC_UNIT(config_file, args):
 	# lc_instance.generate_shells(path_instance, snapshot=None, cutsky=False, nproc=10, Nsubboxes=27)
 
 	foot_nz_instance = FOOT_NZ(config_file, args, galtype="lrg")
-	foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=2)
+	# foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=2)
+	foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=1)
 	# foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=0, todo=0)
 
 	######### CutSky
@@ -37,7 +38,8 @@ def lrg_LC_UNIT(config_file, args):
 	
 	# lc_instance.generate_shells(path_instance, snapshot=98, cutsky=True, nproc=10)
 
-	foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=2)
+	# foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=2)
+	foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=1)
 	# foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=0, todo=0)
 
 def elg_LC_UNIT(config_file, args):
@@ -53,16 +55,18 @@ def elg_LC_UNIT(config_file, args):
 	# lc_instance.generate_shells(path_instance, snapshot=None, cutsky=False, nproc=8)
 
 	foot_nz_instance = FOOT_NZ(config_file, args, galtype="elg")
-	foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=2)
-	foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=0, todo=0)
+	# foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=2)
+	foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=1)
+	# foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=0, todo=0)
 	
 	
 	# ######### CutSky
 	shells_path = "/cutsky_shells_sv3_nz_radecz_xyz_ELG_h5py/"
 	path_instance = Paths_LC(config_file, args, input_name, shells_path)
 	
-	foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=2)
-	foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=0, todo=0)
+	# foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=2)
+	foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=1)
+	# foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=0, todo=0)
 	
 	# lc_instance.generate_shells(path_instance, snapshot=93, cutsky=True, nproc=8, Nsubboxes=27)
 
@@ -71,9 +75,10 @@ def lrg_RAN_UNIT(config_file, args):
 
 	######### Lightcones
 	
-	lc_instance = LC(config_file, args)
+	# lc_instance = LC(config_file, args)
 
 	# foot_nz_instance = FOOT_NZ(config_file, args, galtype="lrg")
+	foot_nz_instance = FOOT_NZ(config_file, args, galtype="lrg")
 	
 	######### CutSky
 	for i in range(10):
@@ -81,9 +86,9 @@ def lrg_RAN_UNIT(config_file, args):
 		path_instance = Paths_LC(config_file, args, input_name, shells_path)
 		
 		# lc_instance.generate_shells(path_instance, snapshot=98, cutsky=True, nproc=10, random=i+1)
-		foot_nz_instance = FOOT_NZ(config_file, args, galtype="lrg")
-		foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=2)
-		foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=0, todo=0)
+		# foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=2)
+		foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=1)
+		# foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=0, todo=0)
 
 def elg_RAN_UNIT(config_file, args):
 	input_name = "ELG_snap{}.gcat.sub{}.fits"
@@ -91,150 +96,136 @@ def elg_RAN_UNIT(config_file, args):
 	
 	######### Lightcones
 
-	lc_instance = LC(config_file, args)
+	# lc_instance = LC(config_file, args)
 
-	# foot_nz_instance = FOOT_NZ(config_file, args, galtype="elg")
-	
-	# ######### CutSky
-	# for i in range(10):
-	i = 9
-	shells_path = f"/ran_{i+1}_cutsky_shells_sv3_nz_radecz_xyz_ELG_h5py/"
-	path_instance = Paths_LC(config_file, args, input_name, shells_path)
-
-	# lc_instance.generate_shells(path_instance, snapshot=93, cutsky=True, nproc=8, Nsubboxes=27, random=i+1)
 	foot_nz_instance = FOOT_NZ(config_file, args, galtype="elg")
-	foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=2)
-	foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=0, todo=0)
+
+	# ######### CutSky
+	for i in range(10):
+		shells_path = f"/ran_{i+1}_cutsky_shells_sv3_nz_radecz_xyz_ELG_h5py/"
+		path_instance = Paths_LC(config_file, args, input_name, shells_path)
+
+		# lc_instance.generate_shells(path_instance, snapshot=93, cutsky=True, nproc=8, Nsubboxes=27, random=i+1)
+		# foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=2)
+		foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=0, todo=1)
+		# foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=0, todo=0)
 	
 
 def lrg_LC_ABACUS(args):
 	config_file = "./config_ABACUS_LRG.ini"
 	input_name = "LRG_snap{}.gcat.sub{}.fits"
 
+	######### Instances
+	# lc_instance = LC(config_file, args)
+	foot_nz_instance = FOOT_NZ(config_file, args, galtype="lrg")
+
 	######### Lightcones
 	shells_path = "/LC_shells_sv3_nz_radecz_xyz_LRG_h5py/"
 	path_instance = Paths_LC(config_file, args, input_name, shells_path)
 
-	lc_instance = LC(config_file, args)
-	lc_instance.generate_shells(path_instance, snapshot=None, cutsky=False, nproc=20, Nsubboxes=64)
+	# lc_instance.generate_shells(path_instance, snapshot=None, cutsky=False, nproc=20, Nsubboxes=64)
 
-	foot_nz_instance = FOOT_NZ(config_file, args, galtype="lrg")
-	foot_nz_instance.shell(path_instance, nproc=20, fullfootprint=2, todo=2)
+	# foot_nz_instance.shell(path_instance, nproc=20, fullfootprint=2, todo=2)
 	foot_nz_instance.shell(path_instance, nproc=20, fullfootprint=0, todo=0)
 	
 	######### CutSky
 	shells_path = "/cutsky_shells_sv3_nz_radecz_xyz_LRG_h5py/"
 	path_instance = Paths_LC(config_file, args, input_name, shells_path)
 
-	lc_instance.generate_shells(path_instance, snapshot=18, cutsky=True, nproc=20, Nsubboxes=64)
+	# lc_instance.generate_shells(path_instance, snapshot=18, cutsky=True, nproc=20, Nsubboxes=64)
 
-	foot_nz_instance.shell(path_instance, nproc=20, fullfootprint=2, todo=2)
+	# foot_nz_instance.shell(path_instance, nproc=20, fullfootprint=2, todo=2)
 	foot_nz_instance.shell(path_instance, nproc=20, fullfootprint=0, todo=0)
 
 def elg_LC_ABACUS(args):
 	config_file = "./config_ABACUS_ELG.ini"
 	input_name = "ELG_snap{}.gcat.sub{}.fits"
 
-	######### Lightcones
+	######### Instances
+	# lc_instance = LC(config_file, args)
+	foot_nz_instance = FOOT_NZ(config_file, args, galtype="elg")
+
+	# ######### Lightcones
 	# shells_path = "/LC_shells_sv3_nz_radecz_xyz_ELG_h5py/"
 	# path_instance = Paths_LC(config_file, args, input_name, shells_path)
 
-	lc_instance = LC(config_file, args)
-	# lc_instance.generate_shells(path_instance, snapshot=None, cutsky=False, nproc=15, Nsubboxes=64)
+	# # lc_instance.generate_shells(path_instance, snapshot=None, cutsky=False, nproc=15, Nsubboxes=64)
 
-	foot_nz_instance = FOOT_NZ(config_file, args, galtype="elg")
-	# foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=2)
+	# # foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=2)
 	# foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=0, todo=0)
 
 	# ######### CutSky
 	# shells_path = "/cutsky_shells_sv3_nz_radecz_xyz_ELG_h5py/"
 	# path_instance = Paths_LC(config_file, args, input_name, shells_path)
 
-	# lc_instance.generate_shells(path_instance, snapshot=15, cutsky=True, nproc=15, Nsubboxes=64)
-	# foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=2)
+	# # lc_instance.generate_shells(path_instance, snapshot=15, cutsky=True, nproc=15, Nsubboxes=64)
+
+	# # foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=2)
 	# foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=0, todo=0)
 
 	### Random Cutsky
-	# for i in range(10):
-	
-	i = 9
-	shells_path = f"/ran_{i+1}_cutsky_shells_sv3_nz_radecz_xyz_ELG_h5py/"
-	path_instance = Paths_LC(config_file, args, input_name, shells_path)
+	for i in range(9, 10):
+		shells_path = f"/ran_{i+1}_cutsky_shells_sv3_nz_radecz_xyz_ELG_h5py/"
+		path_instance = Paths_LC(config_file, args, input_name, shells_path)
 
-	lc_instance.generate_shells(path_instance, snapshot=15, cutsky=True, nproc=15, Nsubboxes=64, random=i+1)
-	foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=2)
-	foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=0, todo=0)
+		# lc_instance.generate_shells(path_instance, snapshot=15, cutsky=True, nproc=15, Nsubboxes=64, random=i+1)
+		# foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=2, todo=2)
+		foot_nz_instance.shell(path_instance, nproc=15, fullfootprint=0, todo=0)
 
 def lrg_RAN_ABACUS(args):
 	config_file = "./config_ABACUS_LRG.ini"
 	input_name = "LRG_snap{}.gcat.sub{}.fits"
 
-	######### Lightcones
-	
-	lc_instance = LC(config_file, args)
-
+	######### Instances
+	# lc_instance = LC(config_file, args)
 	foot_nz_instance = FOOT_NZ(config_file, args, galtype="lrg")
 	
 	######### CutSky
+	for i in range(10):
 	
-	# for i in range(10):
+		shells_path = f"/ran_{i+1}_cutsky_shells_sv3_nz_radecz_xyz_LRG_h5py/"
+		path_instance = Paths_LC(config_file, args, input_name, shells_path)
+		
+		# lc_instance.generate_shells(path_instance, snapshot=18, cutsky=True, nproc=20, random=i+1, Nsubboxes=64)
+		# foot_nz_instance.shell(path_instance, nproc=20, fullfootprint=2, todo=2)
+		foot_nz_instance.shell(path_instance, nproc=20, fullfootprint=0, todo=0)
 	
-	i = 8
-	shells_path = f"/ran_{i+1}_cutsky_shells_sv3_nz_radecz_xyz_LRG_h5py/"
-	path_instance = Paths_LC(config_file, args, input_name, shells_path)
-	
-	lc_instance.generate_shells(path_instance, snapshot=18, cutsky=True, nproc=20, random=i+1, Nsubboxes=64)
-	foot_nz_instance.shell(path_instance, nproc=20, fullfootprint=2, todo=2)
-	foot_nz_instance.shell(path_instance, nproc=20, fullfootprint=0, todo=0)
-	
-	i = 9
-	shells_path = f"/ran_{i+1}_cutsky_shells_sv3_nz_radecz_xyz_LRG_h5py/"
-	path_instance = Paths_LC(config_file, args, input_name, shells_path)
-	
-	lc_instance.generate_shells(path_instance, snapshot=18, cutsky=True, nproc=20, random=i+1, Nsubboxes=64)
-	foot_nz_instance.shell(path_instance, nproc=20, fullfootprint=2, todo=2)
-	foot_nz_instance.shell(path_instance, nproc=20, fullfootprint=0, todo=0)
 	
 def qso_LC_ABACUS(args):
 	config_file = "./config_ABACUS_QSO.ini"
 	input_name = "QSO_snap{}.gcat.sub{}.fits"
 
+	######### Instances
+	# lc_instance = LC(config_file, args)
+	foot_nz_instance = FOOT_NZ(config_file, args, galtype="qso")
+
 	######### Lightcones
 	shells_path = "/LC_shells_sv3_nz_radecz_xyz_QSO_h5py/"
 	path_instance = Paths_LC(config_file, args, input_name, shells_path)
 
-	lc_instance = LC(config_file, args)
-	lc_instance.generate_shells(path_instance, snapshot=None, cutsky=False, nproc=20, Nsubboxes=64)
+	# lc_instance.generate_shells(path_instance, snapshot=None, cutsky=False, nproc=20, Nsubboxes=64)
 
-	# foot_nz_instance = FOOT_NZ(config_file, args, galtype="qso")
-	# foot_nz_instance.shell(path_instance, nproc=20, fullfootprint=2, todo=2)
-	# foot_nz_instance.shell(path_instance, nproc=20, fullfootprint=0, todo=0)
-	
+	foot_nz_instance.shell(path_instance, nproc=10, fullfootprint=2, todo=2)
+	# foot_nz_instance.shell(path_instance, nproc=10, fullfootprint=0, todo=0)
+	exit()
 	######### CutSky
 	shells_path = "/cutsky_shells_sv3_nz_radecz_xyz_QSO_h5py/"
 	path_instance = Paths_LC(config_file, args, input_name, shells_path)
 
-	lc_instance.generate_shells(path_instance, snapshot=11, cutsky=True, nproc=20, Nsubboxes=64)
+	# lc_instance.generate_shells(path_instance, snapshot=11, cutsky=True, nproc=20, Nsubboxes=64)
 
-	# foot_nz_instance.shell(path_instance, nproc=20, fullfootprint=2, todo=2)
-	# foot_nz_instance.shell(path_instance, nproc=20, fullfootprint=0, todo=0)
+	# foot_nz_instance.shell(path_instance, nproc=10, fullfootprint=2, todo=2)
+	foot_nz_instance.shell(path_instance, nproc=10, fullfootprint=0, todo=0)
 
 	######### CutSky
-	# for i in range(10):
-	i=8
-	shells_path = f"/ran_{i+1}_cutsky_shells_sv3_nz_radecz_xyz_QSO_h5py/"
-	path_instance = Paths_LC(config_file, args, input_name, shells_path)
+	for i in range(10):
+		shells_path = f"/ran_{i+1}_cutsky_shells_sv3_nz_radecz_xyz_QSO_h5py/"
+		path_instance = Paths_LC(config_file, args, input_name, shells_path)
 	
-	lc_instance.generate_shells(path_instance, snapshot=11, cutsky=True, nproc=20, random=i+1, Nsubboxes=64)
-	
-	i=9
-	shells_path = f"/ran_{i+1}_cutsky_shells_sv3_nz_radecz_xyz_QSO_h5py/"
-	path_instance = Paths_LC(config_file, args, input_name, shells_path)
-	
-	lc_instance.generate_shells(path_instance, snapshot=11, cutsky=True, nproc=20, random=i+1, Nsubboxes=64)
-	
-	# foot_nz_instance.shell(path_instance, nproc=20, fullfootprint=2, todo=2)
-	# foot_nz_instance.shell(path_instance, nproc=20, fullfootprint=0, todo=0)
+		# lc_instance.generate_shells(path_instance, snapshot=11, cutsky=True, nproc=20, random=i+1, Nsubboxes=64)
+
+		# foot_nz_instance.shell(path_instance, nproc=10, fullfootprint=2, todo=2)
+		foot_nz_instance.shell(path_instance, nproc=10, fullfootprint=0, todo=0)
 
 def bgs_LC_ABACUS():
 
@@ -302,13 +293,15 @@ def main():
 	# elg_LC_UNIT(config_file, args)
 	# elg_RAN_UNIT(config_file, args)
 
-	# qso_LC_ABACUS(args)
+	qso_LC_ABACUS(args)
 
-	# elg_LC_ABACUS(args)
-	
 	# lrg_RAN_ABACUS(args)
+	
 	# lrg_LC_ABACUS(args)
-	bgs_LC_ABACUS()
+	
+	# elg_LC_ABACUS(args)
+
+	# bgs_LC_ABACUS()
 
 
 if __name__ == '__main__':

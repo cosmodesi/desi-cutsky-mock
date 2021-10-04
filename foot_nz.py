@@ -18,13 +18,10 @@ import numpy as np
 import healpy as hp
 from itertools import product
 
-from astropy.io import fits
-#from desimodel.io import fits
 from astropy.table import Table, vstack
 import desimodel.footprint as foot
 import desimodel.io
 import h5py
-import fitsio
 
 
 def bits(ask="try"):
@@ -152,10 +149,6 @@ def apply_footprint(file_, ra, dec, fullfootprint):
 def generate_shell(args):
 	file_, boxL, nz_pars, fullfootprint, todo = args
 	print(file_)
-	# fits = fitsio.FITS(file_,'rw')
-	# ra = fits[1].read_column("RA")
-	# dec = fits[1].read_column("DEC")
-	# z_cosmo = fits[1].read_column("Z_COSMO")
 	
 	f = h5py.File(file_, 'r+')
 	data = f['galaxy']
@@ -164,9 +157,6 @@ def generate_shell(args):
 	z_cosmo = data['Z_COSMO'][()]
 			
 	start = time.time()
-
-	# hdr = fits[1].read_header()
-	
 	
 	if todo == 0:
 		out_arr = apply_footprint(file_, ra, dec, fullfootprint)
@@ -182,25 +172,16 @@ def generate_shell(args):
 	print("TIME: It took {} seconds to get the bits.".format(time.time()-start))
 	
 	start = time.time()
-	# if "STATUS" in fits[1].get_colnames():
-	# 	print("STATUS EXISTS")
-	# 	# status = fits[1].read_column("STATUS")
-		
-	# 	# fits[1].write(out_arr)
-	# else:
-	# 	fits[1].insert_column('STATUS', out_arr)
 
-	# fits.close()
-	
 	if "STATUS" in data.keys():
 		print("STATUS EXISTS")
-		# status = fits[1].read_column("STATUS")
-		new_arr = np.bitwise_or(data["STATUS"][:], out_arr)
+		status = data["STATUS"][:]
+
+		new_arr = np.bitwise_or(status, out_arr)
 		new_arr = new_arr.astype(np.int32)
 		print(np.unique(new_arr))
 		data["STATUS"][:] = new_arr[:]
-
-		# fits[1].write(out_arr)
+		# data["STATUS"][:] = out_arr[:]
 	else:
 		f.create_dataset('galaxy/STATUS', data=out_arr,  dtype=np.int32)
 

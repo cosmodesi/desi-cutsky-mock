@@ -106,7 +106,7 @@ class LC():
 		self.clight  = 299792458.
 
 		self.h, self.results = self.run_camb()
-		
+		self.f_distance2redshift = self.interpolate_redshift_distance()
 		file_alist     =  config.get('dir','file_alist')
 		self.alist = np.loadtxt(file_alist)
 
@@ -122,6 +122,12 @@ class LC():
 		results   = camb.get_results(pars)
 		print("TIME: It took {} seconds to run the CAMB part.".format(time.time()-start))
 		return h, results
+
+	def interpolate_redshift_distance(self):
+		z_array = np.linspace(0, 5, 25001)
+
+		distance = self.results.comoving_radial_distance(z_array)
+		return interp1d(distance, z_array, kind="cubic")
 
 	def checkslicehit(self, chilow, chihigh, xx, yy, zz):
 		""" pre-select so that we're not loading non-intersecting blocks """
@@ -191,7 +197,8 @@ class LC():
 						sy  = ne.evaluate("py -%d + boxL * yy"%origin[1])
 						sz  = ne.evaluate("pz -%d + boxL * zz"%origin[2])
 						r   = ne.evaluate("sqrt(sx*sx + sy*sy + sz*sz)")
-						zi  = self.results.redshift_at_comoving_radial_distance(r/self.h) # interpolated distance from position
+						# zi  = self.results.redshift_at_comoving_radial_distance(r/self.h) # interpolated distance from position
+						zi  = self.f_distance2redshift(r/self.h) # interpolated distance from position
 						idx = np.where((r>chilow) & (r<chiupp))[0]              # only select halos that are within the shell
 
 						if idx.size!=0:
@@ -237,7 +244,8 @@ class LC():
 		
 		if not cutsky:
 			print("LightCone")
-			zmid        = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
+			# zmid        = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
+			zmid        = self.f_distance2redshift(chimid / self.h)
 			nearestsnap = int(self.getnearestsnap(zmid))
 
 			infile = path_instance.input_file.format(nearestsnap, subbox)
@@ -289,7 +297,8 @@ class LC():
 		print("The size of the LC is: ", len(px0))
 		shell_subbox_dict = {"px0": px0, "py0": py0, "pz0": pz0, "ra0": ra0, "dec0": dec0, "zz0": zz0, "zz_rsd0": zz_rsd0}
 		return_dict[subbox] = shell_subbox_dict
-		return_dict["NGAL"] += ngalbox 
+		return_dict["NGAL" + str(subbox)] = ngalbox 
+		return_dict["LC" + str(subbox)] = len(px0)
 		print("TIME: It took {} seconds to process the {} subbox: {}/{} shell.".format(time.time()-start_time, subbox, i+1, len(shellnums)))			
 
 	def compute_shellnums(self):
@@ -316,7 +325,8 @@ class LC():
 			
 			if not cutsky:
 				print("LightCone")
-				zmid        = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
+				# zmid        = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
+				zmid        = self.f_distance2redshift(chimid / self.h)
 				nearestsnap = int(self.getnearestsnap(zmid))
 				snapshot = nearestsnap
 
@@ -326,7 +336,6 @@ class LC():
 				continue
 		
 			return_dict = manager.dict()
-			return_dict["NGAL"]  = 0	
 			counter = 0
 			for subbox in range(Nsubboxes):
 				p = mp.Process(target=self.generate_shell, args=(subbox, i, shellnum, shellnums, snapshot, cutsky, path_instance, random, return_dict))
@@ -339,6 +348,9 @@ class LC():
 					counter = 0
 					jobs = []
 
+			# counter_LC = 0
+			# for subbox in range(Nsubboxes):
+			# 	counter_LC += return_dict["LC" + str(subbox)]
 
 			ra0_array = np.empty(0)
 			dec0_array = np.empty(0)
@@ -347,7 +359,10 @@ class LC():
 			px0_array = np.empty(0)
 			py0_array = np.empty(0)
 			pz0_array = np.empty(0)
+
+			counter_NGAL = 0
 			for subbox in range(Nsubboxes):
+				counter_NGAL += return_dict["NGAL" + str(subbox)]
 				shell_subbox_dict = return_dict[subbox]
 				ra0_array = np.concatenate((ra0_array, shell_subbox_dict["ra0"]))
 				dec0_array = np.concatenate((dec0_array, shell_subbox_dict["dec0"]))
@@ -371,9 +386,9 @@ class LC():
 				ff.create_dataset('galaxy/PX', data=px0_array,     dtype=np.float32)
 				ff.create_dataset('galaxy/PY', data=py0_array,     dtype=np.float32)
 				ff.create_dataset('galaxy/PZ', data=pz0_array,     dtype=np.float32)
-				ff.attrs['NGAL'] = return_dict["NGAL"]
+				ff.attrs['NGAL'] = counter_NGAL
 
-			print("TIME: h5py, It took {} seconds to write the file.".format(time.time()-start))
+			print("TIME: h5py, It took {} seconds to write the file.".format(time.time()-start), flush=True)
 
 			os.rename(out_file_tmp, out_file)
 
