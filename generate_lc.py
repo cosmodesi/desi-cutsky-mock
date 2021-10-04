@@ -106,7 +106,7 @@ class LC():
 		self.clight  = 299792458.
 
 		self.h, self.results = self.run_camb()
-		self.f_distance2redshift = self.interpolate_redshift_distance()
+		# self.f_distance2redshift = self.interpolate_redshift_distance()
 		file_alist     =  config.get('dir','file_alist')
 		self.alist = np.loadtxt(file_alist)
 
@@ -197,8 +197,8 @@ class LC():
 						sy  = ne.evaluate("py -%d + boxL * yy"%origin[1])
 						sz  = ne.evaluate("pz -%d + boxL * zz"%origin[2])
 						r   = ne.evaluate("sqrt(sx*sx + sy*sy + sz*sz)")
-						# zi  = self.results.redshift_at_comoving_radial_distance(r/self.h) # interpolated distance from position
-						zi  = self.f_distance2redshift(r/self.h) # interpolated distance from position
+						zi  = self.results.redshift_at_comoving_radial_distance(r/self.h) # interpolated distance from position
+						# zi  = self.f_distance2redshift(r/self.h) # interpolated distance from position
 						idx = np.where((r>chilow) & (r<chiupp))[0]              # only select halos that are within the shell
 
 						if idx.size!=0:
