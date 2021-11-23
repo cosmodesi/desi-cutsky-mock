@@ -8,6 +8,29 @@ import argparse
 from generate_lc import LC, Paths_LC
 from foot_nz import FOOT_NZ
 
+def lrg_LC_ABACUS(args):
+	config_file = "./config_ABACUS_LRG.ini"
+	input_name = "LRG_snap{}_ph000.gcat.sub{}.fits"
+
+	######### Instances
+	lc_instance = LC(config_file, args)
+	foot_nz_instance = FOOT_NZ(config_file, args, galtype="lrg")
+
+	######### LC
+	# for i in range(25):
+	i = 4
+	phase = str(int(i)).zfill(3)
+	input_name = "LRG_snap{}_ph" + phase + ".gcat.sub{}.fits"
+
+	in_part_path = "/{}/AbacusSummit_base_c000_ph" + phase + "/"
+	shells_path = "/LightCone/AbacusSummit_base_c000_ph{}_test/".format(phase)
+	path_instance = Paths_LC(config_file, args, input_name, shells_path, in_part_path)
+
+	lc_instance.generate_shells(path_instance, cutsky=False, nproc=20, Nsubboxes=64)
+
+	foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=2, todo=0)
+	foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
+
 
 def lrg_cutsky_ABACUS(args):
 	config_file = "./config_ABACUS_LRG.ini"
@@ -158,9 +181,10 @@ def main():
 	# qso_random_ABACUS(args)
 
 
+	lrg_LC_ABACUS(args)
 	# lrg_cutsky_ABACUS(args)
-	elg_cutsky_ABACUS(args)
-	qso_cutsky_ABACUS(args)
+	# elg_cutsky_ABACUS(args)
+	# qso_cutsky_ABACUS(args)
 
 
 	

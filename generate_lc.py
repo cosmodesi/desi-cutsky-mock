@@ -203,11 +203,11 @@ class LC():
 						sy  = ne.evaluate("py -%d + boxL * yy"%origin[1])
 						sz  = ne.evaluate("pz -%d + boxL * zz"%origin[2])
 						r   = ne.evaluate("sqrt(sx*sx + sy*sy + sz*sz)")
-						start = time.time()
 						
+						# start = time.time()
 						zi  = self.results.redshift_at_comoving_radial_distance(r/self.h) # interpolated distance from position
 						# zi  = self.f_distance2redshift(r/self.h) # interpolated distance from position
-						print("TIME: It took {} seconds to obtain redshift.".format(time.time()-start))
+						# print("TIME: It took {} seconds to obtain redshift.".format(time.time()-start))
 						
 						idx = np.where((r>chilow) & (r<chiupp))[0]              # only select halos that are within the shell
 
@@ -242,7 +242,9 @@ class LC():
 		""" get the closest snapshot """
 		# zsnap  = 1/self.alist[:,1]-1.
 		zsnap  = 1/self.alist[:,2]-1.
-		return self.alist[np.argmin(np.abs(zsnap-zmid)),0]
+		index_ = np.argmin(np.abs(zsnap-zmid))
+
+		return int(self.alist[index_, 0]), self.alist[index_, 3]
 
 	def obtain_data(self, subbox, shellnum, shellnums, snapshot, cutsky, path_instance, random):
 		start = time.time()
@@ -256,10 +258,10 @@ class LC():
 			print("LightCone")
 			zmid        = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
 			# zmid        = self.f_distance2redshift(chimid / self.h)
-			nearestsnap = int(self.getnearestsnap(zmid))
+			nearestsnap, nearestred = self.getnearestsnap(zmid)
 
-			infile = path_instance.input_file.format(nearestsnap, subbox)
-	
+			infile = path_instance.input_file.format("z%.3f"%(nearestred), nearestsnap, subbox)
+			print(infile)
 		else:
 			print("Cutsky")
 			infile = path_instance.input_file.format(snapshot, subbox)
@@ -338,7 +340,7 @@ class LC():
 				print("LightCone")
 				zmid        = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
 				# zmid        = self.f_distance2redshift(chimid / self.h)
-				nearestsnap = int(self.getnearestsnap(zmid))
+				nearestsnap, nearestred = self.getnearestsnap(zmid)
 				snapshot = nearestsnap
 
 			out_file_beg = out_file_beg.format(snapshot, "all")
@@ -370,7 +372,7 @@ class LC():
 			px0_array = np.empty(0)
 			py0_array = np.empty(0)
 			pz0_array = np.empty(0)
-			print(return_dict.keys())
+			# print(return_dict.keys())
 			counter_NGAL = 0
 			for subbox in range(Nsubboxes):
 				counter_NGAL += return_dict["NGAL" + str(subbox)]
