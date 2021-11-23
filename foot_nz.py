@@ -59,17 +59,14 @@ def combine_shells(path_instance):
 		
 def nz_oneperc(zz, nz_pars):
 	if nz_pars['galtype'] == "lrg":
-		z, nz = np.loadtxt("./nz_sv3/sm_LRG_mycosmo_v1.0.dat", usecols=(0,1), unpack=True)
-		failurerate = 0
-	elif nz_pars['galtype'] == "elgS":
-		z, nz = np.loadtxt("./nz_sv3/sm_ELG_mycosmo_zS0.6_v1.0.dat", usecols=(0,1), unpack=True)
-		failurerate = 0.25
+		z, nz = np.loadtxt("./nz_sv3/sm_LRG_mycosmo_ev2.1.dat", usecols=(0,1), unpack=True)
+		failurerate = 0.02
 	elif nz_pars['galtype'] == "elg":
-		z, nz = np.loadtxt("./nz_sv3/sm_ELG_mycosmo_v1.0.dat", usecols=(0,1), unpack=True)
+		z, nz = np.loadtxt("./nz_sv3/sm_ELG_mycosmo_ev2.1.dat", usecols=(0,1), unpack=True)
 		failurerate = 0.25
 	elif nz_pars['galtype'] == "qso":
-		z, nz = np.loadtxt("./nz_sv3/sm_QSO_mycosmo_v1.0.dat", usecols=(0,1), unpack=True)
-		failurerate = 0.24
+		z, nz = np.loadtxt("./nz_sv3/sm_QSO_mycosmo_ev2.1.dat", usecols=(0,1), unpack=True)
+		failurerate = 0.37
 	elif nz_pars['galtype'] == "bgs":
 		z, nz = np.loadtxt("./nz_sv3/sm_BGS_mycosmo_v1.0.dat", usecols=(0,1), unpack=True)
 	else:
@@ -95,7 +92,7 @@ def nz_oneperc(zz, nz_pars):
 
 	# nzint = interp1d(z_n, nz_n, fill_value=(0,0))
 
-	np.savetxt("./nz_sv3/" + nz_pars['galtype'] + "_sm_nz_mycosmo_redcor_v1.0.txt", np.array([z_n, nz_n]).T)
+	np.savetxt("./nz_sv3/" + nz_pars['galtype'] + "_sm_nz_mycosmo_redcor_ev2.1.txt", np.array([z_n, nz_n]).T)
 	# return nzint(zz)
 	return np.interp(zz, z_n, nz_n, left=0, right=0)
 

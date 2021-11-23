@@ -61,7 +61,7 @@ def tp2rd(tht, phi):
 	return ra, dec
 
 class Paths_LC():
-	def __init__(self, config_file, args, input_name, shells_path):
+	def __init__(self, config_file, args, input_name, shells_path, in_part_path):
 		config     = configparser.ConfigParser()
 		config.read(config_file)
 
@@ -78,7 +78,8 @@ class Paths_LC():
 			self.shells_path   =  config.get('dir', 'shells_path')
 		if self.dir_gcat is None:
 			self.dir_gcat      =  config.get('dir', 'dir_gcat')
-	
+
+		self.dir_gcat = self.dir_gcat + in_part_path	
 		self.input_file = self.dir_gcat + self.input_name
 		self.shells_out_path = self.create_outpath()
 		self.begin_out_shell = self.shells_out_path + self.input_name[:-4]
@@ -167,9 +168,14 @@ class LC():
 		px    = data['x']
 		py    = data['y']
 		pz    =	data['z']
+		
 		vx    = data['vx']
 		vy    = data['vy']
 		vz    = data['vz']
+		# length = len(data['x'])
+		# vx = np.zeros(length)
+		# vy = np.zeros(length)
+		# vz = np.zeros(length)
 		
 		ngalbox=len(px)
 		print(preffix + "using %d halos"%len(px))
@@ -197,8 +203,12 @@ class LC():
 						sy  = ne.evaluate("py -%d + boxL * yy"%origin[1])
 						sz  = ne.evaluate("pz -%d + boxL * zz"%origin[2])
 						r   = ne.evaluate("sqrt(sx*sx + sy*sy + sz*sz)")
+						start = time.time()
+						
 						zi  = self.results.redshift_at_comoving_radial_distance(r/self.h) # interpolated distance from position
 						# zi  = self.f_distance2redshift(r/self.h) # interpolated distance from position
+						print("TIME: It took {} seconds to obtain redshift.".format(time.time()-start))
+						
 						idx = np.where((r>chilow) & (r<chiupp))[0]              # only select halos that are within the shell
 
 						if idx.size!=0:
@@ -244,8 +254,8 @@ class LC():
 		
 		if not cutsky:
 			print("LightCone")
-			# zmid        = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
-			zmid        = self.f_distance2redshift(chimid / self.h)
+			zmid        = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
+			# zmid        = self.f_distance2redshift(chimid / self.h)
 			nearestsnap = int(self.getnearestsnap(zmid))
 
 			infile = path_instance.input_file.format(nearestsnap, subbox)
@@ -257,10 +267,10 @@ class LC():
 		print(infile)
 		
 		try:
-			hdul = fits.open(infile)
+			hdul = fits.open(infile, memmap=False)
 			data = hdul[1].data
 			hdul.close()
-			print(f"The size of the data is:", len(data["x"]))
+			print(f"Subbox {subbox}: The size of the data is:", len(data["x"]))
 
 		except IOError:
 			print(preffix + f"WARNING: Couldn't open {infile}.", file=sys.stderr)
@@ -281,6 +291,7 @@ class LC():
 			data_r["vx"] 	= np.zeros(length)
 			data_r["vy"] 	= np.zeros(length)
 			data_r["vz"] 	= np.zeros(length)
+
 			return data_r, preffix, chilow, chiupp
 
 		return data, preffix, chilow, chiupp
@@ -325,8 +336,8 @@ class LC():
 			
 			if not cutsky:
 				print("LightCone")
-				# zmid        = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
-				zmid        = self.f_distance2redshift(chimid / self.h)
+				zmid        = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
+				# zmid        = self.f_distance2redshift(chimid / self.h)
 				nearestsnap = int(self.getnearestsnap(zmid))
 				snapshot = nearestsnap
 
@@ -359,7 +370,7 @@ class LC():
 			px0_array = np.empty(0)
 			py0_array = np.empty(0)
 			pz0_array = np.empty(0)
-
+			print(return_dict.keys())
 			counter_NGAL = 0
 			for subbox in range(Nsubboxes):
 				counter_NGAL += return_dict["NGAL" + str(subbox)]
