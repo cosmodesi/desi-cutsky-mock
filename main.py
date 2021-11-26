@@ -8,13 +8,14 @@ import argparse
 from generate_lc import LC, Paths_LC
 from foot_nz import FOOT_NZ
 
+
 def lrg_LC_ABACUS(args):
-	config_file = "./config_ABACUS_LRG.ini"
+	config_file = "./ABACUS/config/config_ABACUS_LRG.ini"
 	input_name = "LRG_snap{}_ph000.gcat.sub{}.fits"
 
 	######### Instances
-	lc_instance = LC(config_file, args)
-	foot_nz_instance = FOOT_NZ(config_file, args, galtype="lrg")
+	# lc_instance = LC(config_file, args)
+	foot_nz_instance = FOOT_NZ(config_file, args, galtype="LRG")
 
 	######### LC
 	# for i in range(25):
@@ -23,22 +24,23 @@ def lrg_LC_ABACUS(args):
 	input_name = "LRG_snap{}_ph" + phase + ".gcat.sub{}.fits"
 
 	in_part_path = "/{}/AbacusSummit_base_c000_ph" + phase + "/"
-	shells_path = "/LightCone/AbacusSummit_base_c000_ph{}_test/".format(phase)
+	shells_path = "/LightCone/AbacusSummit_base_c000_ph{}/".format(phase)
 	path_instance = Paths_LC(config_file, args, input_name, shells_path, in_part_path)
 
-	lc_instance.generate_shells(path_instance, cutsky=False, nproc=20, Nsubboxes=64)
+	# lc_instance.generate_shells(path_instance, cutsky=False, nproc=20, Nsubboxes=64)
 
-	foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=2, todo=0)
-	foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
+	# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=2, todo=0)
+	# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
+	foot_nz_instance.shell(path_instance, nproc=64, todo=3)
 
 
 def lrg_cutsky_ABACUS(args):
-	config_file = "./config_ABACUS_LRG.ini"
+	config_file = "./ABACUS/config/config_ABACUS_LRG.ini"
 	input_name = "LRG_snap{}_ph000.gcat.sub{}.fits"
 
 	######### Instances
-	lc_instance = LC(config_file, args)
-	foot_nz_instance = FOOT_NZ(config_file, args, galtype="lrg")
+	# lc_instance = LC(config_file, args)
+	foot_nz_instance = FOOT_NZ(config_file, args, galtype="LRG")
 
 	######### CutSky 20
 	for i in range(25):
@@ -49,21 +51,22 @@ def lrg_cutsky_ABACUS(args):
 		shells_path = "/z0.800/AbacusSummit_base_c000_ph{}/".format(phase)
 		path_instance = Paths_LC(config_file, args, input_name, shells_path, in_part_path)
 
-		lc_instance.generate_shells(path_instance, snapshot=20, cutsky=True, nproc=20, Nsubboxes=64)
+		# lc_instance.generate_shells(path_instance, snapshot=20, cutsky=True, nproc=20, Nsubboxes=64)
 
-		foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=2, todo=2)
-		foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
+		# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=2, todo=2)
+		# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
+		foot_nz_instance.shell(path_instance, nproc=64, todo=3)
 
 
 def elg_cutsky_ABACUS(args):
-	config_file = "./config_ABACUS_ELG.ini"
+	config_file = "./ABACUS/config/config_ABACUS_ELG.ini"
 
 	######### Instances
-	lc_instance = LC(config_file, args)
+	# lc_instance = LC(config_file, args)
 	foot_nz_instance = FOOT_NZ(config_file, args, galtype="elg")
 
 	# ######### CutSky
-	for i in range(1, 25):
+	for i in range(0, 25):
 		phase = str(int(i)).zfill(3)
 		input_name = "ELGlowDens_snap{}_ph" + phase + ".gcat.sub{}.fits"
 
@@ -71,21 +74,22 @@ def elg_cutsky_ABACUS(args):
 		in_part_path = "/z1.100/AbacusSummit_base_c000_ph{}/".format(phase)
 		path_instance = Paths_LC(config_file, args, input_name, shells_path, in_part_path)
 
-		lc_instance.generate_shells(path_instance, snapshot=16, cutsky=True, nproc=20, Nsubboxes=64)
+		# lc_instance.generate_shells(path_instance, snapshot=16, cutsky=True, nproc=20, Nsubboxes=64)
 
-		foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=2, todo=2)
-		foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
+		# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=2, todo=2)
+		# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
+		foot_nz_instance.shell(path_instance, nproc=1, todo=1)
 
 	
 def qso_cutsky_ABACUS(args):
-	config_file = "./config_ABACUS_QSO.ini"
+	config_file = "./ABACUS/config/config_ABACUS_QSO.ini"
 
 	######### Instances
-	lc_instance = LC(config_file, args)
+	# lc_instance = LC(config_file, args)
 	foot_nz_instance = FOOT_NZ(config_file, args, galtype="qso")
 
 	######### CutSky
-	for i in range(13, 25):
+	for i in range(0, 25):
 		
 		phase = str(int(i)).zfill(3)
 		input_name = "QSO_snap{}_ph" + phase + ".gcat.sub{}.fits"
@@ -94,18 +98,19 @@ def qso_cutsky_ABACUS(args):
 		in_part_path = "/z1.400/AbacusSummit_base_c000_ph{}/".format(phase)
 		path_instance = Paths_LC(config_file, args, input_name, shells_path, in_part_path)
 
-		lc_instance.generate_shells(path_instance, snapshot=12, cutsky=True, nproc=20, Nsubboxes=64)
+		# lc_instance.generate_shells(path_instance, snapshot=12, cutsky=True, nproc=20, Nsubboxes=64)
 
-		foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=2, todo=2)
-		foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
+		# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=2, todo=2)
+		# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
+		foot_nz_instance.shell(path_instance, nproc=64, todo=1)
 
 
 def lrg_random_ABACUS(args):
-	config_file = "./config_ABACUS_ran_LRG.ini"
+	config_file = "./ABACUS/config/config_ABACUS_ran_LRG.ini"
 
 	######### Instances
-	lc_instance = LC(config_file, args)
-	foot_nz_instance = FOOT_NZ(config_file, args, galtype="lrg")
+	# lc_instance = LC(config_file, args)
+	foot_nz_instance = FOOT_NZ(config_file, args, galtype="LRG")
 
 	######### random 10x
 	for i in range(1, 11):
@@ -116,17 +121,18 @@ def lrg_random_ABACUS(args):
 		shells_path = f"/LRG_ran_S{seed}_shells_ph000/"
 		path_instance = Paths_LC(config_file, args, input_name, shells_path, in_part_path)
 
-		lc_instance.generate_shells(path_instance, snapshot=20, cutsky=True, nproc=20, Nsubboxes=64)
+		# lc_instance.generate_shells(path_instance, snapshot=20, cutsky=True, nproc=20, Nsubboxes=64)
 
-		foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=2, todo=2)
-		foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
+		# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=2, todo=2)
+		# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
+		foot_nz_instance.shell(path_instance, nproc=64, todo=3)
 
 
 def elg_random_ABACUS(args):
-	config_file = "./config_ABACUS_ran_ELG.ini"
+	config_file = "./ABACUS/config/config_ABACUS_ran_ELG.ini"
 
 	######### Instances
-	lc_instance = LC(config_file, args)
+	# lc_instance = LC(config_file, args)
 	foot_nz_instance = FOOT_NZ(config_file, args, galtype="elg")
 
 	# ######### CutSky
@@ -138,21 +144,22 @@ def elg_random_ABACUS(args):
 		shells_path = f"/ELG_ran_S{seed}_shells_ph000/"
 		path_instance = Paths_LC(config_file, args, input_name, shells_path, in_part_path)
 
-		lc_instance.generate_shells(path_instance, snapshot=16, cutsky=True, nproc=20, Nsubboxes=64)
+		# lc_instance.generate_shells(path_instance, snapshot=16, cutsky=True, nproc=20, Nsubboxes=64)
 
-		foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=2, todo=2)
-		foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
+		# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=2, todo=2)
+		# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
+		foot_nz_instance.shell(path_instance, nproc=64, todo=1)
 
 
 def qso_random_ABACUS(args):
-	config_file = "./config_ABACUS_ran_QSO.ini"
+	config_file = "./ABACUS/config/config_ABACUS_ran_QSO.ini"
 
 	######### Instances
-	lc_instance = LC(config_file, args)
+	# lc_instance = LC(config_file, args)
 	foot_nz_instance = FOOT_NZ(config_file, args, galtype="qso")
 
 	######### random 10x
-	for i in range(10, 11):
+	for i in range(1, 11):
 		seed = str(i * 100)
 		input_name = "QSO_snap{}_SB{}_S"+ seed +"_ph000.fits"
 
@@ -160,10 +167,11 @@ def qso_random_ABACUS(args):
 		shells_path = f"/QSO_ran_S{seed}_shells_ph000/"
 		path_instance = Paths_LC(config_file, args, input_name, shells_path, in_part_path)
 
-		lc_instance.generate_shells(path_instance, snapshot=12, cutsky=True, nproc=20, Nsubboxes=64)
+		# lc_instance.generate_shells(path_instance, snapshot=12, cutsky=True, nproc=20, Nsubboxes=64)
 
-		foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=2, todo=2)
-		foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
+		# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=2, todo=2)
+		# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
+		foot_nz_instance.shell(path_instance, nproc=64, todo=1)
 
 
 def main():
@@ -172,19 +180,17 @@ def main():
 	parser.add_argument("--dir_out", type=str, help="output directory (overrides config file)")
 	parser.add_argument("--dir_gcat", type=str, help="input directory (same)")
 	parser.add_argument("--input_name", type=str, help="name of input catalogs (same)")
-	parser.add_argument("--lightcone_path", type=str, help="path of output catalogs (same)")
 	args = parser.parse_args()
 	# config_file = str(args.config) # config file
-
-	# lrg_random_ABACUS(args)
-	# elg_random_ABACUS(args)
-	# qso_random_ABACUS(args)
-
 
 	lrg_LC_ABACUS(args)
 	# lrg_cutsky_ABACUS(args)
 	# elg_cutsky_ABACUS(args)
 	# qso_cutsky_ABACUS(args)
+	
+	# lrg_random_ABACUS(args)
+	# elg_random_ABACUS(args)
+	# qso_random_ABACUS(args)
 
 
 	

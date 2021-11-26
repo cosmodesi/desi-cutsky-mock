@@ -5,60 +5,26 @@
 
 import sys
 import os
-import glob
 import tracemalloc
 import time
 import configparser
-import warnings
-import pandas as pd
 import multiprocessing as mp
 
-from scipy.interpolate import interp1d
 import camb
 import numpy as np
 import healpy as hp
 import numexpr as ne
 from astropy.io import fits
-#from desimodel.io import fits
-from astropy.table import Table, vstack
-import desimodel.footprint as foot
-import desimodel.io
+
 import h5py
-import fitsio
 
 		
-def write_catalog_fits(out_file_beg, px, py, pz, ra, dec, z_cosmo, z_rsd, nz):
-	##Writing out the output fits file
-	out_file_tmp = out_file_beg + "_tmp.fits"
-	out_file 	 = out_file_beg + ".fits"
-
-	c1 = fits.Column(name='RA'     , array=ra    , format='E')
-	c2 = fits.Column(name='DEC'    , array=dec   , format='E')
-	c3 = fits.Column(name='Z'      , array=z_rsd , format='D')
-	c4 = fits.Column(name='Z_COSMO', array=z_cosmo     , format='D')
-	c5 = fits.Column(name='DZ_RSD' , array=z_rsd - z_cosmo, format='E')
-	c6 = fits.Column(name='NZ'     , array=nz    , format='E')
-	c7 = fits.Column(name='X0'      , array=px , format='D')
-	c8 = fits.Column(name='Y0'      , array=py , format='D')
-	c9 = fits.Column(name='Z0'      , array=pz , format='D')
-
-	hdu             = fits.BinTableHDU.from_columns([c1, c2, c3, c4, c5, c6, c7, c8, c9])
-	hdr             = fits.Header()
-	primary_hdu     = fits.PrimaryHDU(header=hdr)
-	hdul            = fits.HDUList([primary_hdu, hdu])
-
-	start = time.time()
-	hdul.writeto(out_file_tmp, overwrite=True)
-	print("TIME: fits, It took {} seconds to write the file.".format(time.time()-start))
-	
-	os.rename(out_file_tmp, out_file)
-
-
 def tp2rd(tht, phi):
 	""" convert theta,phi to ra/dec """
-	ra  = phi/np.pi*180.0
-	dec = -1*(tht/np.pi*180.0-90.0)
+	ra  = phi / np.pi * 180.0
+	dec = -1 * (tht / np.pi * 180.0 - 90.0)
 	return ra, dec
+
 
 class Paths_LC():
 	def __init__(self, config_file, args, input_name, shells_path, in_part_path):
@@ -107,7 +73,6 @@ class LC():
 		self.clight  = 299792458.
 
 		self.h, self.results = self.run_camb()
-		# self.f_distance2redshift = self.interpolate_redshift_distance()
 		file_alist     =  config.get('dir','file_alist')
 		self.alist = np.loadtxt(file_alist)
 
@@ -124,11 +89,6 @@ class LC():
 		print("TIME: It took {} seconds to run the CAMB part.".format(time.time()-start))
 		return h, results
 
-	def interpolate_redshift_distance(self):
-		z_array = np.linspace(0, 5, 25001)
-
-		distance = self.results.comoving_radial_distance(z_array)
-		return interp1d(distance, z_array, kind="cubic")
 
 	def checkslicehit(self, chilow, chihigh, xx, yy, zz):
 		""" pre-select so that we're not loading non-intersecting blocks """
@@ -149,11 +109,11 @@ class LC():
 			boo=boo+1
 		if chilow>np.max(r):
 			boo=boo+1
-		#print(chilow,chihigh,np.min(r),np.max(r))
 		if (boo==0):
 			return True
 		else:
 			return False
+
 
 	def convert_xyz2rdz(self, data, preffix, chilow, chiupp):
 		""" Generates and saves a single lightcone shell """		
@@ -172,6 +132,7 @@ class LC():
 		vx    = data['vx']
 		vy    = data['vy']
 		vz    = data['vz']
+		### For randoms
 		# length = len(data['x'])
 		# vx = np.zeros(length)
 		# vy = np.zeros(length)
@@ -206,7 +167,6 @@ class LC():
 						
 						# start = time.time()
 						zi  = self.results.redshift_at_comoving_radial_distance(r/self.h) # interpolated distance from position
-						# zi  = self.f_distance2redshift(r/self.h) # interpolated distance from position
 						# print("TIME: It took {} seconds to obtain redshift.".format(time.time()-start))
 						
 						idx = np.where((r>chilow) & (r<chiupp))[0]              # only select halos that are within the shell
@@ -222,7 +182,7 @@ class LC():
 							pxtmp = px[idx]
 							pytmp = py[idx]
 							pztmp = pz[idx]
-							tht,phi = hp.vec2ang(np.c_[ux,uy,uz])
+							tht, phi = hp.vec2ang(np.c_[ux, uy, uz])
 							ra,dec  = tp2rd(tht,phi)
 							vlos    = ne.evaluate("qx*ux + qy*uy + qz*uz")
 							dz      = ne.evaluate("(vlos/clight)*(1+zp)")
@@ -238,15 +198,17 @@ class LC():
 		
 		return totpx, totpy, totpz, totra, totdec, totz, totz + totdz, ngalbox #, totdz, totvlos
 
+
 	def getnearestsnap(self, zmid):
 		""" get the closest snapshot """
 		# zsnap  = 1/self.alist[:,1]-1.
-		zsnap  = 1/self.alist[:,2]-1.
+		zsnap  = 1/self.alist[:, 2] - 1.
 		index_ = np.argmin(np.abs(zsnap-zmid))
 
 		return int(self.alist[index_, 0]), self.alist[index_, 3]
 
-	def obtain_data(self, subbox, shellnum, shellnums, snapshot, cutsky, path_instance, random):
+
+	def obtain_data(self, subbox, shellnum, shellnums, snapshot, cutsky, path_instance):
 		start = time.time()
 		preffix = f"[shellnum={shellnum}; subbox={subbox}] "
 
@@ -257,7 +219,6 @@ class LC():
 		if not cutsky:
 			print("LightCone")
 			zmid        = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
-			# zmid        = self.f_distance2redshift(chimid / self.h)
 			nearestsnap, nearestred = self.getnearestsnap(zmid)
 
 			infile = path_instance.input_file.format("z%.3f"%(nearestred), nearestsnap, subbox)
@@ -282,27 +243,13 @@ class LC():
 		print(f"Current memory usage is {current / 10**6}MB; Peak was {peak_ / 10**6}MB")
 		print("TIME: It took {} seconds to read the fits file.".format(time.time()-start))
 
-		if random != None:
-			print("ATTENTION: Compute random catalogs!")
-			np.random.seed(int(random + 100*subbox + 10000*shellnum))
-			data_r = {}
-			length = len(data["x"])
-			data_r["x"]    = np.random.uniform(low=0, high=self.boxL, size=length) #self.d[idx,0]
-			data_r["y"]    = np.random.uniform(low=0, high=self.boxL, size=length) #self.d[idx,1]
-			data_r["z"]    = np.random.uniform(low=0, high=self.boxL, size=length) #self.d[idx,2]
-			data_r["vx"] 	= np.zeros(length)
-			data_r["vy"] 	= np.zeros(length)
-			data_r["vz"] 	= np.zeros(length)
-
-			return data_r, preffix, chilow, chiupp
-
 		return data, preffix, chilow, chiupp
 
-	def generate_shell(self, subbox, i, shellnum, shellnums, snapshot, cutsky, path_instance, random, return_dict):
+	def generate_shell(self, subbox, i, shellnum, shellnums, snapshot, cutsky, path_instance, return_dict):
 		start_time = time.time()
 
 		### Read Data
-		data, preffix, chilow, chiupp = self.obtain_data(subbox, shellnum, shellnums, snapshot, cutsky, path_instance, random)
+		data, preffix, chilow, chiupp = self.obtain_data(subbox, shellnum, shellnums, snapshot, cutsky, path_instance)
 		
 		### Convert XYZ to RA DEC Z
 		px0, py0, pz0, ra0, dec0, zz0, zz_rsd0, ngalbox = self.convert_xyz2rdz(data, preffix, chilow, chiupp)
@@ -323,7 +270,7 @@ class LC():
 		print("TIME: It took {} seconds to run compute the shellnums.".format(time.time()-start))
 		return shellnums
 
-	def generate_shells(self, path_instance, snapshot=999, cutsky=True, nproc=5, Nsubboxes=27, random=None):
+	def generate_shells(self, path_instance, snapshot=999, cutsky=True, nproc=5, Nsubboxes=27):
 		jobs = []
 		ne.set_num_threads(4)
 		manager = mp.Manager()
@@ -339,7 +286,6 @@ class LC():
 			if not cutsky:
 				print("LightCone")
 				zmid        = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
-				# zmid        = self.f_distance2redshift(chimid / self.h)
 				nearestsnap, nearestred = self.getnearestsnap(zmid)
 				snapshot = nearestsnap
 
@@ -351,7 +297,7 @@ class LC():
 			return_dict = manager.dict()
 			counter = 0
 			for subbox in range(Nsubboxes):
-				p = mp.Process(target=self.generate_shell, args=(subbox, i, shellnum, shellnums, snapshot, cutsky, path_instance, random, return_dict))
+				p = mp.Process(target=self.generate_shell, args=(subbox, i, shellnum, shellnums, snapshot, cutsky, path_instance, return_dict))
 				jobs.append(p)
 				p.start()
 				counter = counter + 1
@@ -404,32 +350,3 @@ class LC():
 			print("TIME: h5py, It took {} seconds to write the file.".format(time.time()-start), flush=True)
 
 			os.rename(out_file_tmp, out_file)
-
-			# out_type=[('RA',np.float64),('DEC',np.float64), ('Z_COSMO',np.float64), ('Z_RSD',np.float64), ('PX',np.float64), ('PY',np.float64), ('PZ',np.float64)]
-			# outarr=np.zeros(ra0_array.size, dtype=out_type)
-			# outarr['RA']=ra0_array
-			# outarr['DEC']=dec0_array
-			# outarr['Z_COSMO']=zz0_array
-			# outarr['Z_RSD']=zz_rsd0_array
-			# outarr['PX']=px0_array
-			# outarr['PY']=py0_array
-			# outarr['PZ']=pz0_array
-
-			# with fitsio.FITS(out_file_beg+".fits",'rw') as fout:
-			# 	fout.write(outarr)
-			# 	fout[-1].write_key("NGAL", return_dict["NGAL"])
-
-			# 	fout[-1].write_checksum()
-
-			# fits = fitsio.FITS(out_file_beg+".fits", "rw")
-			# fits.write(np.array([ra0_array, dec0_array, zz0_array, zz_rsd0_array, px0_array, py0_array, pz0_array]), names=["ra","dec","z_cosmo","z_rsd", "px", "py", "pz"])
-			
-## RA DEC Z ...  BIT (1, 2, 3)  
-
-## 1)Load the file
-## 2) Reapet box()
-
-## 3) write box()
-			
-			# if len(ra_desi) != 0:
-			# 	write_catalog_fits(out_file_beg, px_desi, py_desi, pz_desi, ra_desi, dec_desi, zz_desi, zz_rsd_desi, nzz_desi)
