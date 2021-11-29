@@ -8,6 +8,7 @@ import argparse
 from generate_lc import LC, Paths_LC
 from foot_nz import FOOT_NZ
 
+from combine_shells_fits import convert
 
 def lrg_LC_ABACUS(args):
 	config_file = "./ABACUS/config/config_ABACUS_LRG.ini"
@@ -33,6 +34,9 @@ def lrg_LC_ABACUS(args):
 	# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
 	foot_nz_instance.shell(path_instance, nproc=64, todo=3)
 
+	out_fits = path_instance.dir_out + f"/LightCone/fits/cutsky_LRG_LC_AbacusSummit_base_c000_ph{phase}.fits"
+	convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype="LRG", boxL=foot_nz_instance.boxL)
+
 
 def lrg_cutsky_ABACUS(args):
 	config_file = "./ABACUS/config/config_ABACUS_LRG.ini"
@@ -57,6 +61,8 @@ def lrg_cutsky_ABACUS(args):
 		# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
 		foot_nz_instance.shell(path_instance, nproc=64, todo=3)
 
+		out_fits = path_instance.dir_out + f"/z0.800/fits/cutsky_LRG_z0.800_AbacusSummit_base_c000_ph{phase}.fits"
+		convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype="LRG", boxL=foot_nz_instance.boxL)
 
 def elg_cutsky_ABACUS(args):
 	config_file = "./ABACUS/config/config_ABACUS_ELG.ini"
@@ -127,6 +133,8 @@ def lrg_random_ABACUS(args):
 		# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
 		foot_nz_instance.shell(path_instance, nproc=64, todo=3)
 
+		out_fits = path_instance.dir_out + f"/fits/LRG_ran_S{seed}_shells_ph000_RANDOM_1X.fits"
+		convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype="LRG", boxL=foot_nz_instance.boxL)
 
 def elg_random_ABACUS(args):
 	config_file = "./ABACUS/config/config_ABACUS_ran_ELG.ini"
@@ -183,12 +191,12 @@ def main():
 	args = parser.parse_args()
 	# config_file = str(args.config) # config file
 
-	lrg_LC_ABACUS(args)
-	# lrg_cutsky_ABACUS(args)
+	# lrg_LC_ABACUS(args)
+	lrg_cutsky_ABACUS(args)
 	# elg_cutsky_ABACUS(args)
 	# qso_cutsky_ABACUS(args)
 	
-	# lrg_random_ABACUS(args)
+	lrg_random_ABACUS(args)
 	# elg_random_ABACUS(args)
 	# qso_random_ABACUS(args)
 
