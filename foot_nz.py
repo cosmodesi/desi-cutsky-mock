@@ -161,13 +161,13 @@ def generate_shell(args):
 	if "STATUS" in data.keys():
 		print("STATUS EXISTS")
 	
-	#	status = data["STATUS"][:]
-	# 	new_arr = np.bitwise_or(status, out_arr)
-	# 	new_arr = new_arr.astype(np.int32)
-	# 	print(np.unique(new_arr))
-	# 	data["STATUS"][:] = new_arr[:]
+		status = data["STATUS"][:]
+		new_arr = np.bitwise_or(status, out_arr)
+		new_arr = new_arr.astype(np.int32)
+		print(np.unique(new_arr))
+		data["STATUS"][:] = new_arr[:]
 
-		data["STATUS"][:] = out_arr[:]
+		# data["STATUS"][:] = out_arr[:]
 	else:
 		print("ERROR: STATUS DOES NOT EXIST")
 		f.create_dataset('galaxy/STATUS', data=out_arr,  dtype=np.int32)
