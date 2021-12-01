@@ -4,7 +4,7 @@ import h5py
 import fitsio
 
 from foot_nz import nz_oneperc
-
+from redshift_error_QSO import sample_redshift_error
 
 def convert(inpath="test", out_file="test", galtype=None, boxL=2000):
     files = glob.glob(inpath + "/*h5py")
@@ -21,6 +21,8 @@ def convert(inpath="test", out_file="test", galtype=None, boxL=2000):
     
     if galtype == "LRG":
         data_fits = np.zeros(counter, dtype=[('RA', 'f4'), ('DEC', 'f4'), ('Z', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('NZ', 'f4'), ('NZ_MAIN', 'f4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4')])
+    elif galtype == "QSO":
+        data_fits = np.zeros(counter, dtype=[('RA', 'f4'), ('DEC', 'f4'), ('Z', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('NZ', 'f4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'), ('Z_ERR_3GAUSS', 'f4'), ('Z_ERR_SIG500', 'f4')])
     else:
         data_fits = np.zeros(counter, dtype=[('RA', 'f4'), ('DEC', 'f4'), ('Z', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('NZ', 'f4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4')])
 
@@ -50,8 +52,12 @@ def convert(inpath="test", out_file="test", galtype=None, boxL=2000):
         data_fits["Z_COSMO"][index_i: index_f] = z_cosmo_tmp
         data_fits["STATUS"][index_i: index_f]  = status_tmp
         data_fits["NZ"][index_i: index_f]      = nz_oneperc(z_cosmo_tmp, galtype=galtype)
+        
         if galtype == "LRG":
             data_fits["NZ_MAIN"][index_i: index_f]      = nz_oneperc(z_cosmo_tmp, galtype="LRG_main")
+        elif galtype == "QSO":
+            data_fits["Z_ERR_3GAUSS"][index_i: index_f] = sample_redshift_error(z_rsd_tmp, error_model='3gauss')
+            data_fits["Z_ERR_SIG500"][index_i: index_f] = sample_redshift_error(z_rsd_tmp, error_model='sig500')
 
         data_fits["RAW_NZ"][index_i: index_f]  = np.ones(len(dec_tmp)) * n_mean
         data_fits["RAN_NUM_0_1"][index_i: index_f]  = ran_num_0_1_tmp
