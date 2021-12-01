@@ -27,12 +27,13 @@ def tp2rd(tht, phi):
 
 
 class Paths_LC():
-	def __init__(self, config_file, args, input_name, shells_path, in_part_path):
+	def __init__(self, config_file, args, in_part_path, input_name, shells_path, output_name):
 		config     = configparser.ConfigParser()
 		config.read(config_file)
 
 		self.dir_out                 = args.dir_out
 		self.input_name              = input_name
+		self.output_name             = output_name
 		self.shells_path 			 = shells_path
 		self.dir_gcat                = args.dir_gcat
 
@@ -48,7 +49,7 @@ class Paths_LC():
 		self.dir_gcat = self.dir_gcat + in_part_path	
 		self.input_file = self.dir_gcat + self.input_name
 		self.shells_out_path = self.create_outpath()
-		self.begin_out_shell = self.shells_out_path + self.input_name[:-4]
+		self.begin_out_shell = self.shells_out_path + self.output_name
 
 	def create_outpath(self):	
 		start = time.time()
@@ -217,17 +218,14 @@ class LC():
 		chimid = 0.5*(chilow+chiupp)
 		
 		if not cutsky:
-			print("LightCone")
 			zmid        = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
 			nearestsnap, nearestred = self.getnearestsnap(zmid)
 
 			infile = path_instance.input_file.format("z%.3f"%(nearestred), nearestsnap, subbox)
 			print(infile)
 		else:
-			print("Cutsky")
 			infile = path_instance.input_file.format(snapshot, subbox)
 
-		print(infile)
 		
 		try:
 			hdul = fits.open(infile, memmap=False)
@@ -240,7 +238,7 @@ class LC():
 			sys.exit()
 		
 		current, peak_ = tracemalloc.get_traced_memory()
-		print(f"Current memory usage is {current / 10**6}MB; Peak was {peak_ / 10**6}MB")
+		# print(f"Current memory usage is {current / 10**6}MB; Peak was {peak_ / 10**6}MB")
 		print("TIME: It took {} seconds to read the fits file.".format(time.time()-start))
 
 		return data, preffix, chilow, chiupp

@@ -173,7 +173,7 @@ def generate_shell(args):
 		f.create_dataset('galaxy/STATUS', data=out_arr,  dtype=np.int32)
 
 	if "RAN_NUM_0_1" in data.keys():
-		print("RAN_NUM_0_1e EXISTS")
+		print("RAN_NUM_0_1 EXISTS")
 		data['RAN_NUM_0_1'][:] = ran_arr[:]
 	else:
 		f.create_dataset('galaxy/RAN_NUM_0_1', data=ran_arr, dtype=np.float32)		

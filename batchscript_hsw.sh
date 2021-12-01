@@ -6,9 +6,9 @@
 #SBATCH -N 1          # number of nodes
 #SBATCH -c 64          # number of cpus per tasks
 #SBATCH --time=48:00:00
-#SBATCH -o ./output/out.firstgen_elg_qso.out
-#SBATCH -e ./output/err.firstgen_elg_qso.err
+#SBATCH -o ./output/out.firstgen_ez_lrg.out
+#SBATCH -e ./output/err.firstgen_ez_lrg.err
 
 source activate desilightcone
 
-srun python main_new.py
+srun python main.py
