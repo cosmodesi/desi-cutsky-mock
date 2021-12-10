@@ -2,6 +2,7 @@ import glob
 import numpy as np
 import h5py
 import fitsio
+import os
 
 from foot_nz import nz_oneperc
 from redshift_error_QSO import sample_redshift_error
@@ -70,6 +71,8 @@ def convert(inpath="test", out_file="test", galtype=None, boxL=2000):
 
       
     hdict = {'SV3_AREA': 207.5, 'Y5_AREA':14850.4}
-    fits = fitsio.FITS(out_file, "rw")
+    fits = fitsio.FITS(out_file+"_tmp", "rw")
     fits.write(data_fits, header=hdict)
     fits.close()
+
+    os.rename(out_file+"_tmp", out_file)
