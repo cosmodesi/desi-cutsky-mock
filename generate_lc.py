@@ -129,15 +129,16 @@ class LC():
 		px    = data['x']
 		py    = data['y']
 		pz    =	data['z']
+		index_    =	data['id']
 		
-		vx    = data['vx']
-		vy    = data['vy']
-		vz    = data['vz']
+		# vx    = data['vx']
+		# vy    = data['vy']
+		# vz    = data['vz']
 		### For randoms
-		# length = len(data['x'])
-		# vx = np.zeros(length)
-		# vy = np.zeros(length)
-		# vz = np.zeros(length)
+		length = len(data['x'])
+		vx = np.zeros(length)
+		vy = np.zeros(length)
+		vz = np.zeros(length)
 		
 		ngalbox=len(px)
 		print(preffix + "using %d halos"%len(px))
@@ -152,17 +153,22 @@ class LC():
 		totpx   = np.array([])
 		totpy   = np.array([])
 		totpz   = np.array([])
+		totid   = np.array([])
 		
 		for xx in range(-ntiles,ntiles):
 			for yy in range(-ntiles,ntiles):
 				for zz in range(-ntiles,ntiles):
 
-					slicehit = self.checkslicehit(chilow,chiupp,xx,yy,zz)             # Check if box intersects with shell
-
+					# slicehit = self.checkslicehit(chilow,chiupp,xx,yy,zz)             # Check if box intersects with shell
+					slicehit = True
 					if slicehit==True:
 
 						sx  = ne.evaluate("px -%d + boxL * xx"%origin[0])
 						sy  = ne.evaluate("py -%d + boxL * yy"%origin[1])
+						
+						# sx = 0.5 * sx0 + sy0 * np.sqrt(3)/2.
+						# sy = - sx0 * np.sqrt(3)/2 + sy0 * 0.5
+
 						sz  = ne.evaluate("pz -%d + boxL * zz"%origin[2])
 						r   = ne.evaluate("sqrt(sx*sx + sy*sy + sz*sz)")
 						
@@ -180,24 +186,26 @@ class LC():
 							qy=vy[idx]*1000.
 							qz=vz[idx]*1000.
 							zp=zi[idx]
-							pxtmp = px[idx]
-							pytmp = py[idx]
-							pztmp = pz[idx]
+							# pxtmp = px[idx]
+							# pytmp = py[idx]
+							# pztmp = pz[idx]
+							idtmp = index_[idx]
 							tht, phi = hp.vec2ang(np.c_[ux, uy, uz])
 							ra,dec  = tp2rd(tht,phi)
 							vlos    = ne.evaluate("qx*ux + qy*uy + qz*uz")
 							dz      = ne.evaluate("(vlos/clight)*(1+zp)")
 
-							totpx   = np.append(totpx,pxtmp)
-							totpy   = np.append(totpy,pytmp)
-							totpz   = np.append(totpz,pztmp)
+							totid   = np.append(totid,idtmp)
+							# totpx   = np.append(totpx,pxtmp)
+							# totpy   = np.append(totpy,pytmp)
+							# totpz   = np.append(totpz,pztmp)
 							totra   = np.append(totra,ra)
 							totdec  = np.append(totdec,dec)
 							totz    = np.append(totz,zp)
 							totdz   = np.append(totdz,dz)
-							totvlos = np.append(totvlos,vlos/1000.) # to convert back to km/s
+							# totvlos = np.append(totvlos,vlos/1000.) # to convert back to km/s
 		
-		return totpx, totpy, totpz, totra, totdec, totz, totz + totdz, ngalbox #, totdz, totvlos
+		return totid, totpx, totpy, totpz, totra, totdec, totz, totz + totdz, ngalbox #, totdz, totvlos
 
 
 	def getnearestsnap(self, zmid):
@@ -250,10 +258,10 @@ class LC():
 		data, preffix, chilow, chiupp = self.obtain_data(subbox, shellnum, shellnums, snapshot, cutsky, path_instance)
 		
 		### Convert XYZ to RA DEC Z
-		px0, py0, pz0, ra0, dec0, zz0, zz_rsd0, ngalbox = self.convert_xyz2rdz(data, preffix, chilow, chiupp)
+		id0, px0, py0, pz0, ra0, dec0, zz0, zz_rsd0, ngalbox = self.convert_xyz2rdz(data, preffix, chilow, chiupp)
 		n_mean = ngalbox/(1.* self.boxL**3)
 		# print("The size of the LC is: ", len(px0))
-		shell_subbox_dict = {"px0": px0, "py0": py0, "pz0": pz0, "ra0": ra0, "dec0": dec0, "zz0": zz0, "zz_rsd0": zz_rsd0}
+		shell_subbox_dict = {"id0": id0, "px0": px0, "py0": py0, "pz0": pz0, "ra0": ra0, "dec0": dec0, "zz0": zz0, "zz_rsd0": zz_rsd0}
 		return_dict[subbox] = shell_subbox_dict
 		return_dict["NGAL" + str(subbox)] = ngalbox 
 		return_dict["LC" + str(subbox)] = len(px0)
@@ -316,6 +324,7 @@ class LC():
 			px0_array = np.empty(0)
 			py0_array = np.empty(0)
 			pz0_array = np.empty(0)
+			id0_array = np.empty(0)
 			# print(return_dict.keys())
 			counter_NGAL = 0
 			for subbox in range(Nsubboxes):
@@ -325,9 +334,10 @@ class LC():
 				dec0_array = np.concatenate((dec0_array, shell_subbox_dict["dec0"]))
 				zz0_array = np.concatenate((zz0_array, shell_subbox_dict["zz0"]))
 				zz_rsd0_array = np.concatenate((zz_rsd0_array, shell_subbox_dict["zz_rsd0"]))
-				px0_array = np.concatenate((px0_array, shell_subbox_dict["px0"]))
-				py0_array = np.concatenate((py0_array, shell_subbox_dict["py0"]))
-				pz0_array = np.concatenate((pz0_array, shell_subbox_dict["pz0"]))
+				# px0_array = np.concatenate((px0_array, shell_subbox_dict["px0"]))
+				# py0_array = np.concatenate((py0_array, shell_subbox_dict["py0"]))
+				# pz0_array = np.concatenate((pz0_array, shell_subbox_dict["pz0"]))
+				id0_array = np.concatenate((id0_array, shell_subbox_dict["id0"]))
 			
 			
 			start = time.time()
@@ -340,9 +350,10 @@ class LC():
 				ff.create_dataset('galaxy/DEC',     data=dec0_array,   dtype=np.float32)
 				ff.create_dataset('galaxy/Z_RSD', 	  data=zz_rsd0_array, dtype=np.float32)
 				ff.create_dataset('galaxy/Z_COSMO', data=zz0_array,     dtype=np.float32)
-				ff.create_dataset('galaxy/PX', data=px0_array,     dtype=np.float32)
-				ff.create_dataset('galaxy/PY', data=py0_array,     dtype=np.float32)
-				ff.create_dataset('galaxy/PZ', data=pz0_array,     dtype=np.float32)
+				# ff.create_dataset('galaxy/PX', data=px0_array,     dtype=np.float32)
+				# ff.create_dataset('galaxy/PY', data=py0_array,     dtype=np.float32)
+				# ff.create_dataset('galaxy/PZ', data=pz0_array,     dtype=np.float32)
+				ff.create_dataset('galaxy/ID', data=id0_array,     dtype=np.int32)
 				ff.attrs['NGAL'] = counter_NGAL
 
 			print("TIME: h5py, It took {} seconds to write the file.".format(time.time()-start), flush=True)
