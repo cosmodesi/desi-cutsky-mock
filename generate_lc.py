@@ -205,6 +205,8 @@ class LC():
 							totdz   = np.append(totdz,dz)
 							# totvlos = np.append(totvlos,vlos/1000.) # to convert back to km/s
 		
+		### NGC I can easily RA. RANEW = (RA + 60)%360 
+		### SGC I have to check the conversion RA DEC
 		return totid, totpx, totpy, totpz, totra, totdec, totz, totz + totdz, ngalbox #, totdz, totvlos
 
 
