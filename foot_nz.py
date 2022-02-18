@@ -134,7 +134,7 @@ def generate_shell(args):
 	dec = data['DEC'][()]
 	z_cosmo = data['Z_COSMO'][()]
 			
-	start = time.time()
+	# start = time.time()
 	
 	if todo == 0:
 		out_arr = apply_footprint(ra, dec, footprint_mask)
@@ -154,9 +154,9 @@ def generate_shell(args):
 		out_arr = np.bitwise_or(foot_bit, down_bit)
 
 	out_arr = out_arr.astype(np.int32)
-	print("TIME: It took {} seconds to get the bits.".format(time.time()-start))
+	# print("TIME: It took {} seconds to get the bits.".format(time.time()-start))
 	
-	start = time.time()
+	# start = time.time()
 
 	if "STATUS" in data.keys():
 		print("STATUS EXISTS")
@@ -179,7 +179,7 @@ def generate_shell(args):
 		f.create_dataset('galaxy/RAN_NUM_0_1', data=ran_arr, dtype=np.float32)		
 
 	f.close()
-	print("TIME: It took {} seconds to insert the column the bits.".format(time.time()-start), flush=True)
+	# print("TIME: It took {} seconds to insert the column the bits.".format(time.time()-start), flush=True)
 
 class FOOT_NZ():
 	def __init__(self, config_file, args, galtype=None):

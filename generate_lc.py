@@ -210,7 +210,7 @@ class LC():
 
 
 	def obtain_data(self, subbox, shellnum, shellnums, snapshot, cutsky, path_instance):
-		start = time.time()
+		# start = time.time()
 		preffix = f"[shellnum={shellnum}; subbox={subbox}] "
 
 		chilow = self.shellwidth*(shellnum+0)
@@ -239,12 +239,12 @@ class LC():
 		
 		current, peak_ = tracemalloc.get_traced_memory()
 		# print(f"Current memory usage is {current / 10**6}MB; Peak was {peak_ / 10**6}MB")
-		print("TIME: It took {} seconds to read the fits file.".format(time.time()-start))
+		# print("TIME: It took {} seconds to read the fits file.".format(time.time()-start))
 
 		return data, preffix, chilow, chiupp
 
 	def generate_shell(self, subbox, i, shellnum, shellnums, snapshot, cutsky, path_instance, return_dict):
-		start_time = time.time()
+		# start_time = time.time()
 
 		### Read Data
 		data, preffix, chilow, chiupp = self.obtain_data(subbox, shellnum, shellnums, snapshot, cutsky, path_instance)
@@ -252,12 +252,12 @@ class LC():
 		### Convert XYZ to RA DEC Z
 		px0, py0, pz0, ra0, dec0, zz0, zz_rsd0, ngalbox = self.convert_xyz2rdz(data, preffix, chilow, chiupp)
 		n_mean = ngalbox/(1.* self.boxL**3)
-		print("The size of the LC is: ", len(px0))
+		# print("The size of the LC is: ", len(px0))
 		shell_subbox_dict = {"px0": px0, "py0": py0, "pz0": pz0, "ra0": ra0, "dec0": dec0, "zz0": zz0, "zz_rsd0": zz_rsd0}
 		return_dict[subbox] = shell_subbox_dict
 		return_dict["NGAL" + str(subbox)] = ngalbox 
 		return_dict["LC" + str(subbox)] = len(px0)
-		print("TIME: It took {} seconds to process the {} subbox: {}/{} shell.".format(time.time()-start_time, subbox, i+1, len(shellnums)))			
+		# print("TIME: It took {} seconds to process the {} subbox: {}/{} shell.".format(time.time()-start_time, subbox, i+1, len(shellnums)))			
 
 	def compute_shellnums(self):
 		start = time.time()

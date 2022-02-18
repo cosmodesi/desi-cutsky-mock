@@ -14,7 +14,8 @@ from combine_shells_fits import convert
 
 
 def LC_ABACUS(args, galtype="QSO"):
-	config_file = f"./ABACUS/config/config_ABACUS_{galtype}_LC.ini"
+	config_file = f"./ABACUS/config/config_ABACUS_{galtype}.ini"
+	print(galtype)
 
 	######### Instances
 	lc_instance = LC(config_file, args)
@@ -22,7 +23,7 @@ def LC_ABACUS(args, galtype="QSO"):
 
 	######### LC
 	# for i in range(25):
-	i = 4
+	i = args.phase
 	phase = str(int(i)).zfill(3)
 	input_name = galtype + "_snap{}_ph" + phase + ".gcat.sub{}.fits"
 	output_name = galtype + "_snap{}_ph" + phase + ".gcat.sub{}"
@@ -49,23 +50,26 @@ def cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B2
 	lc_instance = LC(config_file, args)
 	foot_nz_instance = FOOT_NZ(config_file, args, galtype=galtype)
 
-	init_seed = args.phase * 2 + 1
-	last_seed = init_seed + 2
-	######### CutSky 20
-	for i in range(init_seed, last_seed):
-		phase = str(int(i))
-		input_name = "{}seed" + phase + ".sub{}.fits.gz"
-		output_name = "{}seed" + phase + ".sub{}"
-		in_part_path = f"/{redshift}/{in_fol_temp}{phase}/"
-		shells_path = f"/{redshift}/{in_fol_temp}{phase}/"
-		path_instance = Paths_LC(config_file, args, in_part_path, input_name, shells_path, output_name)
+	# init_seed = args.phase * 2 + 1
+	# last_seed = init_seed + 2
+	# if last_seed > 1000:
+		# last_seed = 1001
+	######## CutSky 20
+	# for i in range(init_seed, last_seed):
+	i = args.phase
+	phase = str(int(i))
+	input_name = "{}seed" + phase + ".sub{}.fits.gz"
+	output_name = "{}seed" + phase + ".sub{}"
+	in_part_path = f"/{redshift}/{in_fol_temp}{phase}/"
+	shells_path = f"/{redshift}/{in_fol_temp}{phase}/"
+	path_instance = Paths_LC(config_file, args, in_part_path, input_name, shells_path, output_name)
 
-		lc_instance.generate_shells(path_instance, snapshot="", cutsky=True, nproc=20, Nsubboxes=64)
+	lc_instance.generate_shells(path_instance, snapshot="", cutsky=True, nproc=20, Nsubboxes=64)
 
-		foot_nz_instance.shell(path_instance, nproc=64, todo=3)
+	foot_nz_instance.shell(path_instance, nproc=64, todo=3)
 
-		out_fits = path_instance.dir_out + f"/{redshift}/fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
-		convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=foot_nz_instance.boxL)
+	out_fits = path_instance.dir_out + f"/{redshift}/fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
+	convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=foot_nz_instance.boxL)
 
 
 def cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELGlowDens", redshift="z1.100", snapshot=16):
@@ -99,6 +103,7 @@ def cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELGlowDens", redshift="z1.10
 	
 
 def random_ABACUS(args, galtype="LRG", snapshot=20, gal_in_name="LRG"):
+	print(galtype)
 	config_file = f"./ABACUS/config/config_ABACUS_ran_{galtype}.ini"
 	######### Instances
 	# lc_instance = LC(config_file, args)
@@ -130,25 +135,44 @@ def main():
 	parser.add_argument("--dir_out", type=str, help="output directory (overrides config file)")
 	parser.add_argument("--dir_gcat", type=str, help="input directory (same)")
 	parser.add_argument("--input_name", type=str, help="name of input catalogs (same)")
+	parser.add_argument("--galaxy", type=str, help="LRG QSO ELG")
 	parser.add_argument("--phase", type=int, help="phase of the catalog")
 
 	args = parser.parse_args()
 	# config_file = str(args.config) # config file
 
-	# cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B2000G512Z1.4N1014636_b0.053d1.13r0c0.6_seed")
-	# cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B2000G512Z0.8N8015724_b0.385d4r169c0.3_seed")
-	
-	
-	cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELGlowDens", redshift="z1.100", snapshot=16)
-	cutsky_ABACUS(args, galtype="LRG", gal_in_name="LRG", redshift="z0.800", snapshot=20)
-	cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO", redshift="z1.400", snapshot=12)
-	
-	random_ABACUS(args, galtype="LRG", snapshot=20, gal_in_name="LRG")
-	random_ABACUS(args, galtype="QSO", snapshot=12, gal_in_name="QSO")
-	random_ABACUS(args, galtype="ELG", snapshot=16, gal_in_name="ELGlowDens")
+	cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B2000G512Z0.8N8015724_b0.385d4r169c0.3_seed")
 
-	# lrg_LC_ABACUS(args)
+	# if args.galaxy == "QSO":
+	# 	cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B2000G512Z1.4N1014636_b0.053d1.13r0c0.6_seed")
 	
+	# elif args.galaxy == "LRG":
+	# 	cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B2000G512Z0.8N8015724_b0.385d4r169c0.3_seed")
+	# else:
+	# 	print("ERROR: Choose between LRG QSO")
+	# 	exit()
+
+	# import time
+	# start = time.time()
+	# cutsky_EZmock(args, galtype="ELG", redshift="z1.100", in_fol_temp="EZmock_B2000G512Z1.1N24000470_b0.345d1.45r40c0.05_seed")
+	# end = time.time()
+	# print(f"################## FINISHED in {end-start}")
+	
+	# cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELGlowDens", redshift="z1.100", snapshot=16)
+	# cutsky_ABACUS(args, galtype="LRG", gal_in_name="LRG", redshift="z0.800", snapshot=20)
+	# cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO", redshift="z1.400", snapshot=12)
+	
+	# random_ABACUS(args, galtype="LRG", snapshot=20, gal_in_name="LRG")
+	# random_ABACUS(args, galtype="QSO", snapshot=12, gal_in_name="QSO")
+	# random_ABACUS(args, galtype="ELG", snapshot=16, gal_in_name="ELGlowDens")
+
+	# if args.galaxy == "QSO":
+	# 	LC_ABACUS(args, galtype="QSO")
+	# elif args.galaxy == "LRG":
+	# 	LC_ABACUS(args, galtype="LRG")
+	# else:
+	# 	print("ERROR: Choose between LRG QSO")
+	# 	exit()
 
 	
 if __name__ == '__main__':
