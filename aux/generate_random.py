@@ -4,13 +4,13 @@ import h5py
 import fitsio
 
 def create_random(in_path, random_out_path, tracer, snap, random, partname="ph000.gcat.suball_shell_100.h5py"):
-    boxL = 6000
+    boxL = 2000
 
     # file_ = in_path + f"/{tracer}_{snap}_{partname}"
     # f = h5py.File(file_, 'r')
     # length = f.attrs["NGAL"]	
     # f.close()
-    length = 200000000	
+    length = 1000000	
 
     print(length)
 
@@ -21,7 +21,7 @@ def create_random(in_path, random_out_path, tracer, snap, random, partname="ph00
     Z = np.random.uniform(low=0, high=boxL, size=length)
     gal_index = np.arange(length)
     counter = 0
-    side_n_subbox = 6
+    side_n_subbox = 4
     qboxL = boxL / side_n_subbox
     print(qboxL)
     for i in range(side_n_subbox):
@@ -54,7 +54,7 @@ def create_random(in_path, random_out_path, tracer, snap, random, partname="ph00
 
 
 def main():
-    main_out_path = "/global/cscratch1/sd/avariu/desi/test_random/box/"
+    main_out_path = "/global/cscratch1/sd/avariu/desi/test_random_seed/box/"
 
     # for i in range(1, 11):
     in_path = main_out_path  + "/ELG/z1.100/AbacusSummit_base_c000_ph000/"

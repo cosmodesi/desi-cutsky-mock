@@ -13,9 +13,9 @@ from combine_shells_fits import convert
 
 
 
-def random_ABACUS(args, galtype="LRG", snapshot=20, gal_in_name="LRG"):
+def random_ABACUS_test(args, galtype="LRG", snapshot=20, gal_in_name="LRG"):
 	print(galtype)
-	config_file = f"./ABACUS/config/config_ABACUS_ran_{galtype}.ini"
+	config_file = f"./ABACUS/config/config_ABACUS_ran_{galtype}_test.ini"
 	######### Instances
 	lc_instance = LC(config_file, args)
 	foot_nz_instance = FOOT_NZ(config_file, args, galtype=galtype)
@@ -27,17 +27,20 @@ def random_ABACUS(args, galtype="LRG", snapshot=20, gal_in_name="LRG"):
 	output_name = gal_in_name + "_snap{}_SB{}_S"+ seed +"_ph000"
 
 	in_part_path = "/box/"
-	shells_path = f"/{galtype}_ran_S{seed}_shells_ph000_para_orig_2/"
+	
+	aux_name = "para_fix_seed_2"
+
+	shells_path = f"/{galtype}_ran_S{seed}_shells_ph000_{aux_name}/"
 	path_instance = Paths_LC(config_file, args, in_part_path, input_name, shells_path, output_name)
 
 	lc_instance.generate_shells(path_instance, snapshot=snapshot, cutsky=True, nproc=15, Nsubboxes=64)
 
 	# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=2, todo=2)
 	# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
-	foot_nz_instance.shell(path_instance, seed, nproc=64, todo=3)
-	# foot_nz_instance.shell_series(path_instance, seed, todo=3)
+	foot_nz_instance.shell(path_instance, i * 100, nproc=64, todo=3)
+	# foot_nz_instance.shell_series(path_instance, i * 100, todo=3)
 
-	out_fits = path_instance.dir_out + f"/fits/{galtype}_ran_S{seed}_shells_ph000_RANDOM_1X_para_orig_2.fits"
+	out_fits = path_instance.dir_out + f"/fits/{galtype}_ran_S{seed}_shells_ph000_RANDOM_1X_{aux_name}_third_time.fits"
 	convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=foot_nz_instance.boxL)
 
 
@@ -57,7 +60,7 @@ def main():
 	import time
 	start = time.time()
 		
-	random_ABACUS(args, galtype="LRG", snapshot=20, gal_in_name="LRG")
+	random_ABACUS_test(args, galtype="LRG", snapshot=20, gal_in_name="LRG")
 
 	end = time.time()
 	print(f"################## FINISHED in {end-start}")
