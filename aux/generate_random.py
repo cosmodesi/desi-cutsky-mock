@@ -6,10 +6,12 @@ import fitsio
 def create_random(in_path, random_out_path, tracer, snap, random, partname="ph000.gcat.suball_shell_100.h5py"):
     boxL = 2000
 
-    file_ = in_path + f"/{tracer}_{snap}_{partname}"
-    f = h5py.File(file_, 'r')
-    length = f.attrs["NGAL"]	
-    f.close()
+    # file_ = in_path + f"/{tracer}_{snap}_{partname}"
+    # f = h5py.File(file_, 'r')
+    # length = f.attrs["NGAL"]	
+    # f.close()
+    length = 1000000	
+
     print(length)
 
 
@@ -18,12 +20,14 @@ def create_random(in_path, random_out_path, tracer, snap, random, partname="ph00
     Y = np.random.uniform(low=0, high=boxL, size=length)
     Z = np.random.uniform(low=0, high=boxL, size=length)
     gal_index = np.arange(length)
-    counter = 0 
-    for i in range(4):
-        for j in range(4):
-            for k in range(4):
-                index_ = i * 4 * 4 + j*4 + k 
-                qboxL = boxL/4.
+    counter = 0
+    side_n_subbox = 4
+    qboxL = boxL / side_n_subbox
+    print(qboxL)
+    for i in range(side_n_subbox):
+        for j in range(side_n_subbox):
+            for k in range(side_n_subbox):
+                index_ = i * side_n_subbox * side_n_subbox + j * side_n_subbox + k 
                 range_ = (X >= i * qboxL) & (X < (i + 1) * qboxL) & (Y >= j * qboxL) & (Y < (j + 1) * qboxL) & (Z >= k * qboxL) & (Z < (k + 1) * qboxL)
                 # print(index_,  i * qboxL, (i + 1) * qboxL, j * qboxL, (j + 1) * qboxL, k * qboxL, (k + 1) * qboxL)
                 counter = counter + len(X[range_])
@@ -50,12 +54,12 @@ def create_random(in_path, random_out_path, tracer, snap, random, partname="ph00
 
 
 def main():
-    main_out_path = "/global/cscratch1/sd/avariu/desi/FirstGenMocks/AbacusSummit/CubicBox/"
+    main_out_path = "/global/cscratch1/sd/avariu/desi/test_random_seed/box/"
 
     # for i in range(1, 11):
     in_path = main_out_path  + "/ELG/z1.100/AbacusSummit_base_c000_ph000/"
-    random_out_path = main_out_path + "/ELG/ran_box/"
-    create_random(in_path, random_out_path, "ELGlowDens", "snap16", 10000, partname="ph000.gcat.suball_shell_100.h5py")
+    random_out_path = main_out_path
+    create_random(in_path, random_out_path, "LRG", "snap20", 10000, partname="")
 
         # in_path = main_out_path  + "/QSO/z1.400/AbacusSummit_base_c000_ph000/"
         # random_out_path = main_out_path + "/QSO/ran_box/"

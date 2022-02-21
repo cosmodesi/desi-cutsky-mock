@@ -55,7 +55,7 @@ def nz_oneperc(zz, galtype="test"):
 	
 	nz = (nz / ( 1 - failurerate )) * 1.0
 	
-	nz_n = nz
+	nz_n = nz / 100
 	z_n = z
 
 	np.savetxt(f"./nz_files/{filename}_redcor.txt", np.array([z_n, nz_n]).T)
@@ -84,6 +84,7 @@ def downsample(boxL, galtype, ngalbox, z_cosmo):
 	""" downsample galaxies following n(z) model specified in galtype"""
 
 	n_mean = ngalbox/(boxL**3)
+
 	ran         = np.random.rand(len(z_cosmo))
 
 	newbits = downsample_aux(z_cosmo, galtype, ran, n_mean, ask="downsample")
@@ -124,9 +125,34 @@ def apply_footprint(ra, dec, footprint_mask):
 
 	return newbits
 
+def determine_return_shellnum(file_, begin_out_shell):
+	filename = os.path.basename(file_)
+	index_i = filename.find("_shell_")
+	index_f = filename.find(".h5py")
+	shellnum = filename[index_i + 7: index_f]
+
+	files = glob.glob(begin_out_shell.format("*", "*") + "_shell_" + shellnum + ".h5py")
+	print(files)
+	if len(files) != 1:
+		print("CRASH", len(files))
+		sys.exit()
+	elif not os.path.basename(files[0]):
+		print("CRASH", len(files), files[0])
+		sys.exit()
+	else:
+		return int(shellnum) 
+
 def generate_shell(args):
-	file_, boxL, galtype, footprint_mask, todo = args
-	print(file_)
+	file_, boxL, galtype, tracer_id, footprint_mask, todo, begin_out_shell, cat_seed = args
+	
+	shellnum = determine_return_shellnum(file_, begin_out_shell)
+	
+	print(file_, shellnum)
+
+	unique_seed = tracer_id * 500500 + 250 * cat_seed + shellnum
+	print("UNIQUE SEED:", unique_seed)
+	np.random.seed(unique_seed)
+
 	
 	f = h5py.File(file_, 'r+')
 	data = f['galaxy']
@@ -198,12 +224,25 @@ class FOOT_NZ():
 	
 		# self.nz_par = nz_par
 		self.galtype = galtype
+		
+		self.tracer_id = 0
+
+		if galtype == "LRG" or galtype == "LRG_main":
+			self.tracer_id = 0
+		elif galtype == "ELG":
+			self.tracer_id = 1
+		elif galtype == "QSO":
+			self.tracer_id = 2
+		
+		print(f"INFO: {self.galtype} with {self.tracer_id} ID")
+
 	
-	def shell(self, path_instance, nproc=5, footprint_mask=0, todo=1):
+	
+	def shell(self, path_instance, cat_seed, nproc=5, footprint_mask=0, todo=1):
 		
 		infiles = glob.glob(path_instance.shells_out_path + "/*.h5py")
 
-		args = product(infiles, [self.boxL], [self.galtype], [footprint_mask], [todo])
+		args = product(infiles, [self.boxL], [self.galtype], [self.tracer_id], [footprint_mask], [todo], [path_instance.begin_out_shell], [cat_seed])
 	
 		pool = mp.Pool(processes=nproc)
 	
@@ -211,3 +250,12 @@ class FOOT_NZ():
 		
 		pool.close()
 		pool.join()
+
+	def shell_series(self, path_instance, cat_seed, footprint_mask=0, todo=1):
+		
+		infiles = glob.glob(path_instance.shells_out_path + "/*.h5py")
+
+		for file_ in infiles:
+			args = [file_, self.boxL, self.galtype, self.tracer_id, footprint_mask, todo, path_instance.begin_out_shell, cat_seed]
+			generate_shell(args)
+
