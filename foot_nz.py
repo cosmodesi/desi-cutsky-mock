@@ -55,7 +55,7 @@ def nz_oneperc(zz, galtype="test"):
 	
 	nz = (nz / ( 1 - failurerate )) * 1.0
 	
-	nz_n = nz / 100
+	nz_n = nz
 	z_n = z
 
 	np.savetxt(f"./nz_files/{filename}_redcor.txt", np.array([z_n, nz_n]).T)

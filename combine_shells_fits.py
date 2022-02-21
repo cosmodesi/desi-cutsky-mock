@@ -21,7 +21,7 @@ def convert(inpath="test", out_file="test", galtype=None, boxL=2000):
         f.close()
     
     if galtype == "LRG":
-        data_fits = np.zeros(counter, dtype=[('RA', 'f4'), ('DEC', 'f4'), ('Z', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('NZ', 'f4'), ('NZ_MAIN', 'f4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'), ('ID', 'i4')])
+        data_fits = np.zeros(counter, dtype=[('RA', 'f4'), ('DEC', 'f4'), ('Z', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('NZ', 'f4'), ('NZ_MAIN', 'f4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4')])
     elif galtype == "QSO":
         data_fits = np.zeros(counter, dtype=[('RA', 'f4'), ('DEC', 'f4'), ('Z', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('NZ', 'f4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'), ('Z_ERR_3GAUSS', 'f4'), ('Z_ERR_SIG500', 'f4')])
     else:
@@ -43,7 +43,6 @@ def convert(inpath="test", out_file="test", galtype=None, boxL=2000):
         z_cosmo_tmp = data['Z_COSMO'][()]
         status_tmp  = data['STATUS'][()]
         ran_num_0_1_tmp  = data['RAN_NUM_0_1'][()]
-        ID_tmp  = data['ID'][()]
 
         if len(dec_tmp) == 0:
             continue
@@ -54,7 +53,6 @@ def convert(inpath="test", out_file="test", galtype=None, boxL=2000):
         data_fits["Z_COSMO"][index_i: index_f] = z_cosmo_tmp
         data_fits["STATUS"][index_i: index_f]  = status_tmp
         data_fits["NZ"][index_i: index_f]      = nz_oneperc(z_cosmo_tmp, galtype=galtype)
-        data_fits["ID"][index_i: index_f]      = ID_tmp
         
         if galtype == "LRG":
             data_fits["NZ_MAIN"][index_i: index_f]      = nz_oneperc(z_cosmo_tmp, galtype="LRG_main")
