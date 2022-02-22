@@ -4,13 +4,13 @@ import h5py
 import fitsio
 
 def create_random(in_path, random_out_path, tracer, snap, random, partname="ph000.gcat.suball_shell_100.h5py"):
-    boxL = 2000
+    boxL = 6000
 
     # file_ = in_path + f"/{tracer}_{snap}_{partname}"
     # f = h5py.File(file_, 'r')
     # length = f.attrs["NGAL"]	
     # f.close()
-    length = 1000000	
+    length = 2160000	
 
     print(length)
 
@@ -21,7 +21,7 @@ def create_random(in_path, random_out_path, tracer, snap, random, partname="ph00
     Z = np.random.uniform(low=0, high=boxL, size=length)
     gal_index = np.arange(length)
     counter = 0
-    side_n_subbox = 4
+    side_n_subbox = 6
     qboxL = boxL / side_n_subbox
     print(qboxL)
     for i in range(side_n_subbox):
@@ -32,7 +32,7 @@ def create_random(in_path, random_out_path, tracer, snap, random, partname="ph00
                 # print(index_,  i * qboxL, (i + 1) * qboxL, j * qboxL, (j + 1) * qboxL, k * qboxL, (k + 1) * qboxL)
                 counter = counter + len(X[range_])
                 filename = random_out_path + tracer + "_" + snap + "_SB" + str(index_) + f"_S{100*random}" + "_ph000.fits"
-                # print(filename)
+                print(filename)
                 data = np.zeros(len(X[range_]), dtype=[('x','f4'), ('y','f4'), ('z','f4'), ('id', 'i4')])
                 fits = fitsio.FITS(filename, 'rw')
                 data["x"] = X[range_]
@@ -54,7 +54,7 @@ def create_random(in_path, random_out_path, tracer, snap, random, partname="ph00
 
 
 def main():
-    main_out_path = "/global/cscratch1/sd/avariu/desi/test_random_seed/box/"
+    main_out_path = "/global/cscratch1/sd/avariu/desi/test_random/box/"
 
     # for i in range(1, 11):
     in_path = main_out_path  + "/ELG/z1.100/AbacusSummit_base_c000_ph000/"

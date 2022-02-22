@@ -129,6 +129,31 @@ def random_ABACUS(args, galtype="LRG", snapshot=20, gal_in_name="LRG"):
 		convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=foot_nz_instance.boxL)
 
 
+def random_ABACUS_test(args, galtype="LRG", snapshot=20, gal_in_name="LRG"):
+	print(galtype)
+	config_file = f"./ABACUS/config/config_ABACUS_ran_{galtype}_test.ini"
+	######### Instances
+	lc_instance = LC(config_file, args)
+	foot_nz_instance = FOOT_NZ(config_file, args, galtype=galtype)
+
+	######### random 10x
+	i = 10000
+	seed = str(i * 100)
+	input_name = gal_in_name + "_snap{}_SB{}_S"+ seed +"_ph000.fits"
+	output_name = gal_in_name + "_snap{}_SB{}_S"+ seed +"_ph000"
+
+	in_part_path = "/box/"
+	shells_path = f"/{galtype}_ran_S{seed}_shells_ph000_orig/"
+	path_instance = Paths_LC(config_file, args, in_part_path, input_name, shells_path, output_name)
+
+	lc_instance.generate_shells(path_instance, snapshot=snapshot, cutsky=True, nproc=16, Nsubboxes=216)
+
+	foot_nz_instance.shell(path_instance, i * 100, nproc=64, todo=3)
+
+	out_fits = path_instance.dir_out + f"/fits/{galtype}_ran_S{seed}_shells_ph000_RANDOM_1X_orig.fits"
+	convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=foot_nz_instance.boxL)
+
+
 def main():
 	parser = argparse.ArgumentParser()
 	# parser.add_argument("config", help="ini file holding configuration", type=str)
@@ -137,11 +162,15 @@ def main():
 	parser.add_argument("--input_name", type=str, help="name of input catalogs (same)")
 	parser.add_argument("--galaxy", type=str, help="LRG QSO ELG")
 	parser.add_argument("--phase", type=int, help="phase of the catalog")
+	parser.add_argument("--ngc_sgc", type=str, help="NGC or SGC preferred rotation")
 
 	args = parser.parse_args()
+
+	random_ABACUS_test(args, galtype="LRG", snapshot=20, gal_in_name="LRG")
+
 	# config_file = str(args.config) # config file
 
-	cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B2000G512Z0.8N8015724_b0.385d4r169c0.3_seed")
+	# cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B2000G512Z0.8N8015724_b0.385d4r169c0.3_seed")
 
 	# if args.galaxy == "QSO":
 	# 	cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B2000G512Z1.4N1014636_b0.053d1.13r0c0.6_seed")

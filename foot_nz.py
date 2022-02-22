@@ -59,7 +59,7 @@ def nz_oneperc(zz, galtype="test"):
 	z_n = z
 
 	np.savetxt(f"./nz_files/{filename}_redcor.txt", np.array([z_n, nz_n]).T)
-	return np.interp(zz, z_n, nz_n, left=0, right=0)
+	return np.interp(zz, z_n, nz_n / 100., left=0, right=0)
 
 
 def downsample_aux(z_cosmo, galtype, ran, n_mean, ask="downsample"):
@@ -162,22 +162,22 @@ def generate_shell(args):
 			
 	# start = time.time()
 	
-	if todo == 0:
-		out_arr = apply_footprint(ra, dec, footprint_mask)
-	elif todo == 1:
-		out_arr, ran_arr = downsample(boxL, galtype, f.attrs["NGAL"], z_cosmo)
-	elif todo == 2:
-		foot_bit = apply_footprint(ra, dec, footprint_mask)
-		down_bit, ran_arr = downsample(boxL, galtype, f.attrs["NGAL"], z_cosmo)
-		out_arr = np.bitwise_or(foot_bit, down_bit)
-	elif todo == 3:
-		foot_bit0 = apply_footprint(ra, dec, 0)
-		foot_bit2 = apply_footprint(ra, dec, 2)
-		foot_bit = np.bitwise_or(foot_bit0, foot_bit2)
-		
-		down_bit, ran_arr = downsample(boxL, galtype, f.attrs["NGAL"], z_cosmo)		
-		
-		out_arr = np.bitwise_or(foot_bit, down_bit)
+	# if todo == 0:
+	# 	out_arr = apply_footprint(ra, dec, footprint_mask)
+	# elif todo == 1:
+	# 	out_arr, ran_arr = downsample(boxL, galtype, f.attrs["NGAL"], z_cosmo)
+	# elif todo == 2:
+	# 	foot_bit = apply_footprint(ra, dec, footprint_mask)
+	# 	down_bit, ran_arr = downsample(boxL, galtype, f.attrs["NGAL"], z_cosmo)
+	# 	out_arr = np.bitwise_or(foot_bit, down_bit)
+	# elif todo == 3:
+	foot_bit0 = apply_footprint(ra, dec, 0)
+	foot_bit2 = apply_footprint(ra, dec, 2)
+	foot_bit = np.bitwise_or(foot_bit0, foot_bit2)
+	
+	down_bit, ran_arr = downsample(boxL, galtype, f.attrs["NGAL"], z_cosmo)		
+	
+	out_arr = np.bitwise_or(foot_bit, down_bit)
 
 	out_arr = out_arr.astype(np.int32)
 	# print("TIME: It took {} seconds to get the bits.".format(time.time()-start))
@@ -187,11 +187,11 @@ def generate_shell(args):
 	if "STATUS" in data.keys():
 		print("STATUS EXISTS")
 	
-		status = data["STATUS"][:]
-		new_arr = np.bitwise_or(status, out_arr)
-		new_arr = new_arr.astype(np.int32)
-		print(np.unique(new_arr))
-		data["STATUS"][:] = new_arr[:]
+		# status = data["STATUS"][:]
+		# new_arr = np.bitwise_or(status, out_arr)
+		# new_arr = new_arr.astype(np.int32)
+		# print(np.unique(new_arr))
+		# data["STATUS"][:] = new_arr[:]
 
 		# data["STATUS"][:] = out_arr[:]
 	else:
@@ -200,7 +200,7 @@ def generate_shell(args):
 
 	if "RAN_NUM_0_1" in data.keys():
 		print("RAN_NUM_0_1 EXISTS")
-		data['RAN_NUM_0_1'][:] = ran_arr[:]
+		# data['RAN_NUM_0_1'][:] = ran_arr[:]
 	else:
 		f.create_dataset('galaxy/RAN_NUM_0_1', data=ran_arr, dtype=np.float32)		
 
