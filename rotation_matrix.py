@@ -23,6 +23,8 @@ class RotationMatrix():
             sys.exit()
 
     def ngc_matrix(self):
+        print("INFO: Using the Rotation matrix for NGC")
+        
         axx = ayy = 1 / 2.
         
         axy = - np.sqrt(3) / 2.
@@ -36,6 +38,8 @@ class RotationMatrix():
         return [axx, axy, axz, ayx, ayy, ayz, azx, azy, azz]
 
     def sgc_matrix(self):
+        print("INFO: Using the Rotation matrix for SGC")
+
         axx = ayy = (1 / 2.) + 1. / ( 2. * np.sqrt(2) )
         
         axy = ayx = (1 / 2.) - 1. / ( 2. * np.sqrt(2) )

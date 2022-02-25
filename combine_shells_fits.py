@@ -4,7 +4,7 @@ import h5py
 import fitsio
 import os
 
-from foot_nz import nz_oneperc
+from foot_nz import get_nz
 from redshift_error_QSO import sample_redshift_error
 
 def convert(inpath="test", out_file="test", galtype=None, boxL=2000):
@@ -53,11 +53,11 @@ def convert(inpath="test", out_file="test", galtype=None, boxL=2000):
         data_fits["Z"][index_i: index_f]       = z_rsd_tmp
         data_fits["Z_COSMO"][index_i: index_f] = z_cosmo_tmp
         data_fits["STATUS"][index_i: index_f]  = status_tmp
-        data_fits["NZ"][index_i: index_f]      = nz_oneperc(z_cosmo_tmp, galtype=galtype)
+        data_fits["NZ"][index_i: index_f]      = get_nz(z_cosmo_tmp, galtype=galtype)
         data_fits["ID"][index_i: index_f]      = id_tmp
         
         if galtype == "LRG":
-            data_fits["NZ_MAIN"][index_i: index_f]      = nz_oneperc(z_cosmo_tmp, galtype="LRG_main")
+            data_fits["NZ_MAIN"][index_i: index_f]      = get_nz(z_cosmo_tmp, galtype="LRG_main")
         elif galtype == "QSO":
             data_fits["Z_ERR_3GAUSS"][index_i: index_f] = sample_redshift_error(z_rsd_tmp, error_model='3gauss')
             data_fits["Z_ERR_SIG500"][index_i: index_f] = sample_redshift_error(z_rsd_tmp, error_model='sig500')
