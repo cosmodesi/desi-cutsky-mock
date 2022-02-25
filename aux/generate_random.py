@@ -10,7 +10,7 @@ def create_random(in_path, random_out_path, tracer, snap, random, partname="ph00
     # f = h5py.File(file_, 'r')
     # length = f.attrs["NGAL"]	
     # f.close()
-    length = 2160000	
+    length = 216000000	
 
     print(length)
 

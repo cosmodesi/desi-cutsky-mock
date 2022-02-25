@@ -81,6 +81,7 @@ class LC():
 		rotation_matrix_instance = RotationMatrix(config_file, args)
 		self.rotation_matrix = rotation_matrix_instance.rotation_matrix
 
+
 	def run_camb(self):
 		#Load all parameters from camb file 
 		start = time.time()
@@ -93,6 +94,16 @@ class LC():
 		results   = camb.get_results(pars)
 		print("TIME: It took {} seconds to run the CAMB part.".format(time.time()-start))
 		return h, results
+
+
+	def compute_shellnums(self):
+		start = time.time()
+		shellnum_min = int(self.results.comoving_radial_distance(self.zmin)*self.h // self.shellwidth)
+		shellnum_max = int(self.results.comoving_radial_distance(self.zmax)*self.h // self.shellwidth + 1)
+		shellnums = list(range(shellnum_min, shellnum_max+1))
+		print(f"INFO: There are {len(shellnums)} shells.")
+		print("TIME: It took {} seconds to run compute the shellnums.".format(time.time()-start))
+		return shellnums
 
 
 	def checkslicehit(self, chilow, chihigh, xx, yy, zz):
@@ -133,18 +144,20 @@ class LC():
 		px    = data['x']
 		py    = data['y']
 		pz    =	data['z']
-		id_   = data['id']
-		# vx    = data['vx']
-		# vy    = data['vy']
-		# vz    = data['vz']
-		### For randoms
-		length = len(data['x'])
-		vx = np.zeros(length)
-		vy = np.zeros(length)
-		vz = np.zeros(length)
 		
 		ngalbox=len(px)
 		print(preffix + "using %d halos"%len(px))
+		
+		### For randoms
+		id_   = data['id']
+		vx = np.zeros(ngalbox)
+		vy = np.zeros(ngalbox)
+		vz = np.zeros(ngalbox)
+
+		### For DATA		
+		# vx    = data['vx']
+		# vy    = data['vy']
+		# vz    = data['vz']
 		
 		#-------------------------------------------------------------------
 
@@ -152,10 +165,12 @@ class LC():
 		totdec  = np.array([])
 		totz    = np.array([])
 		totdz   = np.array([])
-		totvlos = np.array([])
-		totpx   = np.array([])
-		totpy   = np.array([])
-		totpz   = np.array([])
+		# totvlos = np.array([])
+		# totpx   = np.array([])
+		# totpy   = np.array([])
+		# totpz   = np.array([])
+		
+		### For randoms
 		totid   = np.array([])
 		
 		for xx in range(-ntiles,ntiles):
@@ -166,21 +181,19 @@ class LC():
 					slicehit = True
 					if slicehit==True:
 
-						sx  = ne.evaluate("px -%d + boxL * xx"%origin[0])
-						sy  = ne.evaluate("py -%d + boxL * yy"%origin[1])
-						sz  = ne.evaluate("pz -%d + boxL * zz"%origin[2])
+						sx_0  = ne.evaluate("px -%d + boxL * xx"%origin[0])
+						sy_0  = ne.evaluate("py -%d + boxL * yy"%origin[1])
+						sz_0  = ne.evaluate("pz -%d + boxL * zz"%origin[2])
 						
-						# [axx, axy, axz, ayx, ayy, ayz, azx, azy, azz] = self.rotation_matrix
+						[axx, axy, axz, ayx, ayy, ayz, azx, azy, azz] = self.rotation_matrix
 
-						# sx = ne.evaluate("axx * sx_0 + axy * sy_0 + axz * sz_0")
-						# sy = ne.evaluate("ayx * sx_0 + ayy * sy_0 + ayz * sz_0")
-						# sz = ne.evaluate("azx * sx_0 + azy * sy_0 + azz * sz_0")
+						sx = ne.evaluate("axx * sx_0 + axy * sy_0 + axz * sz_0")
+						sy = ne.evaluate("ayx * sx_0 + ayy * sy_0 + ayz * sz_0")
+						sz = ne.evaluate("azx * sx_0 + azy * sy_0 + azz * sz_0")
 
 						r   = ne.evaluate("sqrt(sx*sx + sy*sy + sz*sz)")
 						
-						# start = time.time()
 						zi  = self.results.redshift_at_comoving_radial_distance(r/self.h) # interpolated distance from position
-						# print("TIME: It took {} seconds to obtain redshift.".format(time.time()-start))
 						
 						idx = np.where((r>chilow) & (r<chiupp))[0]              # only select halos that are within the shell
 
@@ -192,26 +205,30 @@ class LC():
 							qy=vy[idx]*1000.
 							qz=vz[idx]*1000.
 							zp=zi[idx]
-							pxtmp = px[idx]
-							pytmp = py[idx]
-							pztmp = pz[idx]
+							
+							### For randoms
 							idtmp = id_[idx]
+							###
+
 							tht, phi = hp.vec2ang(np.c_[ux, uy, uz])
 							ra,dec  = tp2rd(tht,phi)
+							
 							vlos    = ne.evaluate("qx*ux + qy*uy + qz*uz")
 							dz      = ne.evaluate("(vlos/clight)*(1+zp)")
 
-							totpx   = np.append(totpx,pxtmp)
-							totpy   = np.append(totpy,pytmp)
-							totpz   = np.append(totpz,pztmp)
 							totra   = np.append(totra,ra)
 							totdec  = np.append(totdec,dec)
 							totz    = np.append(totz,zp)
 							totdz   = np.append(totdz,dz)
-							totid   = np.append(totid, idtmp)
 							# totvlos = np.append(totvlos,vlos/1000.) # to convert back to km/s
+							
+							### For randoms
+							totid   = np.append(totid, idtmp)
+							###
+							
 		
-		return totid, totpx, totpy, totpz, totra, totdec, totz, totz + totdz, ngalbox #, totdz, totvlos
+		# return totid, totpx, totpy, totpz, totra, totdec, totz, totz + totdz, ngalbox #, totdz, totvlos
+		return totid, totra, totdec, totz, totz + totdz, ngalbox
 
 
 	def getnearestsnap(self, zmid):
@@ -224,7 +241,6 @@ class LC():
 
 
 	def obtain_data(self, subbox, shellnum, shellnums, snapshot, cutsky, path_instance):
-		# start = time.time()
 		preffix = f"[shellnum={shellnum}; subbox={subbox}] "
 
 		chilow = self.shellwidth*(shellnum+0)
@@ -251,36 +267,27 @@ class LC():
 			print(preffix + f"WARNING: Couldn't open {infile}.", file=sys.stderr)
 			sys.exit()
 		
-		current, peak_ = tracemalloc.get_traced_memory()
+		# current, peak_ = tracemalloc.get_traced_memory()
 		# print(f"Current memory usage is {current / 10**6}MB; Peak was {peak_ / 10**6}MB")
-		# print("TIME: It took {} seconds to read the fits file.".format(time.time()-start))
 
 		return data, preffix, chilow, chiupp
 
+
 	def generate_shell(self, subbox, i, shellnum, shellnums, snapshot, cutsky, path_instance, return_dict):
-		# start_time = time.time()
 
 		### Read Data
 		data, preffix, chilow, chiupp = self.obtain_data(subbox, shellnum, shellnums, snapshot, cutsky, path_instance)
 		
 		### Convert XYZ to RA DEC Z
-		id0, px0, py0, pz0, ra0, dec0, zz0, zz_rsd0, ngalbox = self.convert_xyz2rdz(data, preffix, chilow, chiupp)
+		id0, ra0, dec0, zz0, zz_rsd0, ngalbox = self.convert_xyz2rdz(data, preffix, chilow, chiupp)
+		
 		n_mean = ngalbox/(1.* self.boxL**3)
-		# print("The size of the LC is: ", len(px0))
-		shell_subbox_dict = {"id0":id0, "px0": px0, "py0": py0, "pz0": pz0, "ra0": ra0, "dec0": dec0, "zz0": zz0, "zz_rsd0": zz_rsd0}
+		
+		shell_subbox_dict = {"id0":id0, "ra0": ra0, "dec0": dec0, "zz0": zz0, "zz_rsd0": zz_rsd0}
 		return_dict[subbox] = shell_subbox_dict
-		return_dict["NGAL" + str(subbox)] = ngalbox 
-		return_dict["LC" + str(subbox)] = len(px0)
-		# print("TIME: It took {} seconds to process the {} subbox: {}/{} shell.".format(time.time()-start_time, subbox, i+1, len(shellnums)))			
 
-	def compute_shellnums(self):
-		start = time.time()
-		shellnum_min = int(self.results.comoving_radial_distance(self.zmin)*self.h // self.shellwidth)
-		shellnum_max = int(self.results.comoving_radial_distance(self.zmax)*self.h // self.shellwidth + 1)
-		shellnums = list(range(shellnum_min, shellnum_max+1))
-		print(f"INFO: There are {len(shellnums)} shells.")
-		print("TIME: It took {} seconds to run compute the shellnums.".format(time.time()-start))
-		return shellnums
+		return_dict["NGAL" + str(subbox)] = ngalbox 
+
 
 	def generate_shells(self, path_instance, snapshot=999, cutsky=True, nproc=5, Nsubboxes=27):
 		jobs = []
@@ -319,34 +326,28 @@ class LC():
 					counter = 0
 					jobs = []
 
-			# counter_LC = 0
-			# for subbox in range(Nsubboxes):
-			# 	counter_LC += return_dict["LC" + str(subbox)]
-
 			ra0_array = np.empty(0)
 			dec0_array = np.empty(0)
 			zz0_array = np.empty(0)
 			zz_rsd0_array = np.empty(0)
-			px0_array = np.empty(0)
-			py0_array = np.empty(0)
-			pz0_array = np.empty(0)
-			id0_array = np.empty(0)
-			# print(return_dict.keys())
 			counter_NGAL = 0
+			
+			### For randoms
+			id0_array = np.empty(0)
+			###
+
 			for subbox in range(Nsubboxes):
 				counter_NGAL += return_dict["NGAL" + str(subbox)]
 				shell_subbox_dict = return_dict[subbox]
-				ra0_array = np.concatenate((ra0_array, shell_subbox_dict["ra0"]))
-				dec0_array = np.concatenate((dec0_array, shell_subbox_dict["dec0"]))
-				zz0_array = np.concatenate((zz0_array, shell_subbox_dict["zz0"]))
+				ra0_array     = np.concatenate((ra0_array,     shell_subbox_dict["ra0"]))
+				dec0_array    = np.concatenate((dec0_array,    shell_subbox_dict["dec0"]))
+				zz0_array     = np.concatenate((zz0_array,     shell_subbox_dict["zz0"]))
 				zz_rsd0_array = np.concatenate((zz_rsd0_array, shell_subbox_dict["zz_rsd0"]))
-				px0_array = np.concatenate((px0_array, shell_subbox_dict["px0"]))
-				py0_array = np.concatenate((py0_array, shell_subbox_dict["py0"]))
-				pz0_array = np.concatenate((pz0_array, shell_subbox_dict["pz0"]))
+
+				### For randoms
 				id0_array = np.concatenate((id0_array, shell_subbox_dict["id0"]))
+				###
 			
-			
-			start = time.time()
 			out_file_tmp = out_file_beg + "_tmp.h5py"
 			out_file 	 = out_file_beg + ".h5py"
 
@@ -356,12 +357,7 @@ class LC():
 				ff.create_dataset('galaxy/DEC',     data=dec0_array,   dtype=np.float32)
 				ff.create_dataset('galaxy/Z_RSD', 	  data=zz_rsd0_array, dtype=np.float32)
 				ff.create_dataset('galaxy/Z_COSMO', data=zz0_array,     dtype=np.float32)
-				ff.create_dataset('galaxy/PX', data=px0_array,     dtype=np.float32)
-				ff.create_dataset('galaxy/PY', data=py0_array,     dtype=np.float32)
-				ff.create_dataset('galaxy/PZ', data=pz0_array,     dtype=np.float32)
 				ff.create_dataset('galaxy/ID', data=id0_array,     dtype=np.int32)
 				ff.attrs['NGAL'] = counter_NGAL
-
-			print("TIME: h5py, It took {} seconds to write the file.".format(time.time()-start), flush=True)
 
 			os.rename(out_file_tmp, out_file)

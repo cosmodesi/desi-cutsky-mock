@@ -143,15 +143,16 @@ def random_ABACUS_test(args, galtype="LRG", snapshot=20, gal_in_name="LRG"):
 	output_name = gal_in_name + "_snap{}_SB{}_S"+ seed +"_ph000"
 
 	in_part_path = "/box/"
-	shells_path = f"/{galtype}_ran_S{seed}_shells_ph000_orig/"
+	shells_path = f"/{galtype}_ran_S{seed}_shells_ph000_rot_SGC/"
 	path_instance = Paths_LC(config_file, args, in_part_path, input_name, shells_path, output_name)
 
 	lc_instance.generate_shells(path_instance, snapshot=snapshot, cutsky=True, nproc=16, Nsubboxes=216)
 
 	foot_nz_instance.shell(path_instance, i * 100, nproc=64, todo=3)
 
-	out_fits = path_instance.dir_out + f"/fits/{galtype}_ran_S{seed}_shells_ph000_RANDOM_1X_orig.fits"
+	out_fits = path_instance.dir_out + f"/fits/{galtype}_ran_S{seed}_shells_ph000_RANDOM_1X_rot_SGC.fits"
 	convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=foot_nz_instance.boxL)
+
 
 
 def main():

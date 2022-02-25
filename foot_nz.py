@@ -27,7 +27,12 @@ def bits(ask="try"):
 	sys.exit()
 
 
-def nz_oneperc(zz, galtype="test"):
+def get_nz(zz, galtype="test"):
+	''' The function where the n(z) is read 
+	and the NZ column is computed for the given
+	redshifts.
+	'''
+
 	if galtype == "LRG":
 		filename = "sm_LRG_mycosmo_ev2.1.dat"
 		failurerate = 0.
@@ -39,6 +44,7 @@ def nz_oneperc(zz, galtype="test"):
 	elif galtype == "ELG":
 		filename = "sm_ELG_mycosmo_ev2.1.dat"
 		failurerate = 0.25
+
 	elif galtype == "QSO":
 		filename = "sm_QSO_mycosmo_ev2.1.dat"
 		failurerate = 0.37
@@ -47,30 +53,27 @@ def nz_oneperc(zz, galtype="test"):
 		sys.exit()
 	
 	nz_file = f"./nz_files/{filename}"
-	# try:
+	
 	z, nz = np.loadtxt(nz_file, usecols=(0, 1), unpack=True)
-	# except IOError:
-	# 	print(f"WARNING: Couldn't open {nz_file}.", file=sys.stderr)
-	# 	sys.exit()
-	
-	nz = (nz / ( 1 - failurerate )) * 1.0
-	
-	nz_n = nz
 	z_n = z
+	
+	nz_n = (nz / ( 1 - failurerate )) * 1.0
+	
 
 	np.savetxt(f"./nz_files/{filename}_redcor.txt", np.array([z_n, nz_n]).T)
-	return np.interp(zz, z_n, nz_n / 100., left=0, right=0)
+
+	return np.interp(zz, z_n, nz_n, left=0, right=0)
 
 
 def downsample_aux(z_cosmo, galtype, ran, n_mean, ask="downsample"):
 	""" downsample galaxies following n(z) model specified in galtype"""
 
-	nz = nz_oneperc(z_cosmo, galtype=galtype)
+	nz = get_nz(z_cosmo, galtype=galtype)
 
 	# downsample
 	nz_selected = (ran<nz/n_mean)
 	idx         = np.where(nz_selected)
-	print("Selected {} out of {} galaxies.".format(len(idx[0]), len(z_cosmo)))
+	print("DOWNSAMPLE: Selected {} out of {} galaxies.".format(len(idx[0]), len(z_cosmo)))
 
 	bitval = bits(ask=ask)
 	
@@ -97,6 +100,7 @@ def downsample(boxL, galtype, ngalbox, z_cosmo):
 
 	return newbits, ran
 
+
 def apply_footprint(ra, dec, footprint_mask):
 	""" apply desi footprint """
 	
@@ -118,12 +122,13 @@ def apply_footprint(ra, dec, footprint_mask):
 	
 	idx   = np.where(point)
 
-	print("Selected {} out of {} galaxies.".format(len(idx[0]), len(ra)))
+	print("FOOTPRINT: Selected {} out of {} galaxies.".format(len(idx[0]), len(ra)))
 	
 	newbits = np.zeros(len(ra), dtype=np.int32)
 	newbits[idx] = bitval
 
 	return newbits
+
 
 def determine_return_shellnum(file_, begin_out_shell):
 	filename = os.path.basename(file_)
@@ -134,13 +139,14 @@ def determine_return_shellnum(file_, begin_out_shell):
 	files = glob.glob(begin_out_shell.format("*", "*") + "_shell_" + shellnum + ".h5py")
 	print(files)
 	if len(files) != 1:
-		print("CRASH", len(files))
+		print("ERROR: return_shellnum", len(files))
 		sys.exit()
 	elif not os.path.basename(files[0]):
-		print("CRASH", len(files), files[0])
+		print("ERROR: return_shellnum", len(files), files[0])
 		sys.exit()
 	else:
 		return int(shellnum) 
+
 
 def generate_shell(args):
 	file_, boxL, galtype, tracer_id, footprint_mask, todo, begin_out_shell, cat_seed = args
@@ -150,7 +156,7 @@ def generate_shell(args):
 	print(file_, shellnum)
 
 	unique_seed = tracer_id * 500500 + 250 * cat_seed + shellnum
-	print("UNIQUE SEED:", unique_seed)
+	print("INFO: UNIQUE SEED:", unique_seed)
 	np.random.seed(unique_seed)
 
 	
@@ -160,17 +166,7 @@ def generate_shell(args):
 	dec = data['DEC'][()]
 	z_cosmo = data['Z_COSMO'][()]
 			
-	# start = time.time()
 	
-	# if todo == 0:
-	# 	out_arr = apply_footprint(ra, dec, footprint_mask)
-	# elif todo == 1:
-	# 	out_arr, ran_arr = downsample(boxL, galtype, f.attrs["NGAL"], z_cosmo)
-	# elif todo == 2:
-	# 	foot_bit = apply_footprint(ra, dec, footprint_mask)
-	# 	down_bit, ran_arr = downsample(boxL, galtype, f.attrs["NGAL"], z_cosmo)
-	# 	out_arr = np.bitwise_or(foot_bit, down_bit)
-	# elif todo == 3:
 	foot_bit0 = apply_footprint(ra, dec, 0)
 	foot_bit2 = apply_footprint(ra, dec, 2)
 	foot_bit = np.bitwise_or(foot_bit0, foot_bit2)
@@ -178,11 +174,8 @@ def generate_shell(args):
 	down_bit, ran_arr = downsample(boxL, galtype, f.attrs["NGAL"], z_cosmo)		
 	
 	out_arr = np.bitwise_or(foot_bit, down_bit)
-
 	out_arr = out_arr.astype(np.int32)
-	# print("TIME: It took {} seconds to get the bits.".format(time.time()-start))
 	
-	# start = time.time()
 
 	if "STATUS" in data.keys():
 		print("STATUS EXISTS")
@@ -195,7 +188,6 @@ def generate_shell(args):
 
 		# data["STATUS"][:] = out_arr[:]
 	else:
-		print("ERROR: STATUS DOES NOT EXIST")
 		f.create_dataset('galaxy/STATUS', data=out_arr,  dtype=np.int32)
 
 	if "RAN_NUM_0_1" in data.keys():
@@ -205,7 +197,7 @@ def generate_shell(args):
 		f.create_dataset('galaxy/RAN_NUM_0_1', data=ran_arr, dtype=np.float32)		
 
 	f.close()
-	# print("TIME: It took {} seconds to insert the column the bits.".format(time.time()-start), flush=True)
+
 
 class FOOT_NZ():
 	def __init__(self, config_file, args, galtype=None):
@@ -216,13 +208,6 @@ class FOOT_NZ():
 		self.zmin       =  config.getfloat('sim', 'zmin')
 		self.zmax       =  config.getfloat('sim', 'zmax')
 		
-		# nz_par = dict()
-
-		# nz_par["galtype"]       = galtype
-		# nz_par["zmin"]          = config.getfloat(f'{galtype}', 'zmin', fallback=self.zmin)
-		# nz_par["zmax"]          = config.getfloat(f'{galtype}', 'zmax', fallback=self.zmax)
-	
-		# self.nz_par = nz_par
 		self.galtype = galtype
 		
 		self.tracer_id = 0
