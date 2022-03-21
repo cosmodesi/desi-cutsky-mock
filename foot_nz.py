@@ -26,6 +26,8 @@ def bits(ask="try"):
 	if ask == "downsample_main": return 8 #(1 0 0 0)
 	sys.exit()
 
+def mask(main=0, nz=0, Y5=0, sv3=0):
+    return nz * (2**0) + Y5 * (2**1) + sv3 * (2**2) + main * (2**3)
 
 def get_nz(zz, galtype="test"):
 	''' The function where the n(z) is read 
@@ -71,9 +73,9 @@ def downsample_aux(z_cosmo, galtype, ran, n_mean, ask="downsample"):
 	nz = get_nz(z_cosmo, galtype=galtype)
 
 	# downsample
-	nz_selected = (ran<nz/n_mean)
+	nz_selected = ran < nz / n_mean
 	idx         = np.where(nz_selected)
-	print("DOWNSAMPLE: Selected {} out of {} galaxies.".format(len(idx[0]), len(z_cosmo)))
+	print("DOWNSAMPLE: Selected {} out of {} galaxies.".format(len(idx[0]), len(z_cosmo)), flush=True)
 
 	bitval = bits(ask=ask)
 	
@@ -122,7 +124,7 @@ def apply_footprint(ra, dec, footprint_mask):
 	
 	idx   = np.where(point)
 
-	print("FOOTPRINT: Selected {} out of {} galaxies.".format(len(idx[0]), len(ra)))
+	print("FOOTPRINT: Selected {} out of {} galaxies.".format(len(idx[0]), len(ra)), flush=True)
 	
 	newbits = np.zeros(len(ra), dtype=np.int32)
 	newbits[idx] = bitval
@@ -156,7 +158,7 @@ def generate_shell(args):
 	print(file_, shellnum)
 
 	unique_seed = tracer_id * 500500 + 250 * cat_seed + shellnum
-	print("INFO: UNIQUE SEED:", unique_seed)
+	print("INFO: UNIQUE SEED:", unique_seed, flush=True)
 	np.random.seed(unique_seed)
 
 	
@@ -228,7 +230,10 @@ class FOOT_NZ():
 		infiles = glob.glob(path_instance.shells_out_path + "/*.h5py")
 
 		args = product(infiles, [self.boxL], [self.galtype], [self.tracer_id], [footprint_mask], [todo], [path_instance.begin_out_shell], [cat_seed])
-	
+
+		if nproc > len(infiles):
+			nproc = len(infiles)
+
 		pool = mp.Pool(processes=nproc)
 	
 		pool.map_async(generate_shell, args)

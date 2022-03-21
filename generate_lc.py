@@ -14,6 +14,8 @@ import camb
 import numpy as np
 import healpy as hp
 import numexpr as ne
+ne.set_num_threads(4)
+
 from astropy.io import fits
 
 import h5py
@@ -110,9 +112,9 @@ class LC():
 		""" pre-select so that we're not loading non-intersecting blocks """
 		boxL = self.boxL
 		origin = self.origin
-		bvx=np.array([0, boxL, boxL,   0,   0, boxL, boxL,   0])
-		bvy=np.array([0,    0, boxL, boxL,   0,   0, boxL, boxL])
-		bvz=np.array([0,    0,   0,   0, boxL, boxL, boxL, boxL])
+		bvx=np.array([0, boxL, boxL, 0,    0,    boxL, boxL, 0])
+		bvy=np.array([0,    0, boxL, boxL, 0,    0,    boxL, boxL])
+		bvz=np.array([0,    0,   0,  0,    boxL, boxL, boxL, boxL])
 
 		boo = 0
 		r   = np.zeros(8)
@@ -173,60 +175,62 @@ class LC():
 		### For randoms
 		totid   = np.array([])
 		
+
+		[axx, axy, axz, ayx, ayy, ayz, azx, azy, azz] = self.rotation_matrix
+
 		for xx in range(-ntiles,ntiles):
 			for yy in range(-ntiles,ntiles):
 				for zz in range(-ntiles,ntiles):
 
 					# slicehit = self.checkslicehit(chilow,chiupp,xx,yy,zz)             # Check if box intersects with shell
-					slicehit = True
-					if slicehit==True:
+					# slicehit = True
+					# if slicehit==True:
 
-						sx_0  = ne.evaluate("px -%d + boxL * xx"%origin[0])
-						sy_0  = ne.evaluate("py -%d + boxL * yy"%origin[1])
-						sz_0  = ne.evaluate("pz -%d + boxL * zz"%origin[2])
+					sx_0  = ne.evaluate("px -%d + boxL * xx"%origin[0])
+					sy_0  = ne.evaluate("py -%d + boxL * yy"%origin[1])
+					sz_0  = ne.evaluate("pz -%d + boxL * zz"%origin[2])
+					
+					sx = ne.evaluate("axx * sx_0 + axy * sy_0 + axz * sz_0")
+					sy = ne.evaluate("ayx * sx_0 + ayy * sy_0 + ayz * sz_0")
+					sz = ne.evaluate("azx * sx_0 + azy * sy_0 + azz * sz_0")
+
+					r   = ne.evaluate("sqrt(sx*sx + sy*sy + sz*sz)")
+					
+					zi  = self.results.redshift_at_comoving_radial_distance(r/self.h) # interpolated distance from position
+										
+					idx = np.where((r>chilow) & (r<chiupp))[0]              # only select halos that are within the shell
+
+					if idx.size!=0:
 						
-						[axx, axy, axz, ayx, ayy, ayz, azx, azy, azz] = self.rotation_matrix
-
-						sx = ne.evaluate("axx * sx_0 + axy * sy_0 + axz * sz_0")
-						sy = ne.evaluate("ayx * sx_0 + ayy * sy_0 + ayz * sz_0")
-						sz = ne.evaluate("azx * sx_0 + azy * sy_0 + azz * sz_0")
-
-						r   = ne.evaluate("sqrt(sx*sx + sy*sy + sz*sz)")
+						ux=sx[idx]/r[idx]
+						uy=sy[idx]/r[idx]
+						uz=sz[idx]/r[idx]
 						
-						zi  = self.results.redshift_at_comoving_radial_distance(r/self.h) # interpolated distance from position
+						qx=vx[idx]*1000.
+						qy=vy[idx]*1000.
+						qz=vz[idx]*1000.
+						zp=zi[idx]
 						
-						idx = np.where((r>chilow) & (r<chiupp))[0]              # only select halos that are within the shell
+						### For randoms
+						idtmp = id_[idx]
+						###
 
-						if idx.size!=0:
-							ux=sx[idx]/r[idx]
-							uy=sy[idx]/r[idx]
-							uz=sz[idx]/r[idx]
-							qx=vx[idx]*1000.
-							qy=vy[idx]*1000.
-							qz=vz[idx]*1000.
-							zp=zi[idx]
-							
-							### For randoms
-							idtmp = id_[idx]
-							###
+						tht, phi = hp.vec2ang(np.c_[ux, uy, uz])
+						ra,dec  = tp2rd(tht,phi)
+						
+						vlos    = ne.evaluate("qx*ux + qy*uy + qz*uz")
+						dz      = ne.evaluate("(vlos/clight)*(1+zp)")
 
-							tht, phi = hp.vec2ang(np.c_[ux, uy, uz])
-							ra,dec  = tp2rd(tht,phi)
-							
-							vlos    = ne.evaluate("qx*ux + qy*uy + qz*uz")
-							dz      = ne.evaluate("(vlos/clight)*(1+zp)")
+						totra   = np.append(totra,ra)
+						totdec  = np.append(totdec,dec)
+						totz    = np.append(totz,zp)
+						totdz   = np.append(totdz,dz)
+						# totvlos = np.append(totvlos,vlos/1000.) # to convert back to km/s
+						
+						### For randoms
+						totid   = np.append(totid, idtmp)
+						###
 
-							totra   = np.append(totra,ra)
-							totdec  = np.append(totdec,dec)
-							totz    = np.append(totz,zp)
-							totdz   = np.append(totdz,dz)
-							# totvlos = np.append(totvlos,vlos/1000.) # to convert back to km/s
-							
-							### For randoms
-							totid   = np.append(totid, idtmp)
-							###
-							
-		
 		# return totid, totpx, totpy, totpz, totra, totdec, totz, totz + totdz, ngalbox #, totdz, totvlos
 		return totid, totra, totdec, totz, totz + totdz, ngalbox
 
@@ -302,6 +306,10 @@ class LC():
 			chiupp = self.shellwidth*(shellnum+1)
 			chimid = 0.5*(chilow+chiupp)
 			
+			zlow        = self.results.redshift_at_comoving_radial_distance(chilow / self.h)
+			if zlow > self.zmax:
+				continue
+
 			if not cutsky:
 				print("LightCone")
 				zmid        = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
@@ -326,28 +334,42 @@ class LC():
 					counter = 0
 					jobs = []
 
-			ra0_array = np.empty(0)
-			dec0_array = np.empty(0)
-			zz0_array = np.empty(0)
-			zz_rsd0_array = np.empty(0)
+			### Count the number of galaxies per shell			
+			N_GAL_SHELL_ALL_SUBBOXES = 0
+			for subbox in range(Nsubboxes):
+				shell_subbox_dict = return_dict[subbox]
+				N_GAL_SHELL_ALL_SUBBOXES += len(shell_subbox_dict["ra0"])
+			
+			### Declare arrays of size 
+			ra0_array = np.zeros(N_GAL_SHELL_ALL_SUBBOXES)
+			dec0_array = np.zeros(N_GAL_SHELL_ALL_SUBBOXES)
+			zz0_array = np.zeros(N_GAL_SHELL_ALL_SUBBOXES)
+			zz_rsd0_array = np.zeros(N_GAL_SHELL_ALL_SUBBOXES)
 			counter_NGAL = 0
 			
 			### For randoms
-			id0_array = np.empty(0)
+			id0_array = np.zeros(N_GAL_SHELL_ALL_SUBBOXES)
 			###
 
+			index_i = 0
+			index_f = 0
 			for subbox in range(Nsubboxes):
 				counter_NGAL += return_dict["NGAL" + str(subbox)]
 				shell_subbox_dict = return_dict[subbox]
-				ra0_array     = np.concatenate((ra0_array,     shell_subbox_dict["ra0"]))
-				dec0_array    = np.concatenate((dec0_array,    shell_subbox_dict["dec0"]))
-				zz0_array     = np.concatenate((zz0_array,     shell_subbox_dict["zz0"]))
-				zz_rsd0_array = np.concatenate((zz_rsd0_array, shell_subbox_dict["zz_rsd0"]))
+			
+				index_f = index_i + len(shell_subbox_dict["ra0"])
+
+				ra0_array[index_i: index_f]     = shell_subbox_dict["ra0"]
+				dec0_array[index_i: index_f]    = shell_subbox_dict["dec0"]
+				zz0_array[index_i: index_f]     = shell_subbox_dict["zz0"]
+				zz_rsd0_array[index_i: index_f] = shell_subbox_dict["zz_rsd0"]
 
 				### For randoms
-				id0_array = np.concatenate((id0_array, shell_subbox_dict["id0"]))
+				id0_array[index_i: index_f]     = shell_subbox_dict["id0"]
 				###
-			
+
+				index_i = index_f 
+
 			out_file_tmp = out_file_beg + "_tmp.h5py"
 			out_file 	 = out_file_beg + ".h5py"
 
