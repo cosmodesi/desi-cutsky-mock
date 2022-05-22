@@ -131,21 +131,52 @@ def cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B2
 	lc_instance = LC(config_file, args)
 	foot_nz_instance = FOOT_NZ(config_file, args, galtype=galtype)
 
-	i = args.phase
-	phase = str(int(i))
-	input_name = "{}seed" + phase + ".sub{}.fits.gz"
-	output_name = "{}seed" + phase + ".sub{}"
 	
-	in_part_path = f"/{redshift}/{in_fol_temp}{phase}/"
-	shells_path = f"/{redshift}/{in_fol_temp}{phase}/"
-	path_instance = Paths_LC(config_file, args, in_part_path, input_name, shells_path, output_name)
+	init_phase = args.phase
+	final_phase = init_phase + 1
+	
+	for i in range(init_phase, final_phase, 1):
+		phase = str(int(i))
+		input_name = "{}seed" + phase + ".sub{}.fits.gz"
+		output_name = "{}seed" + phase + ".sub{}"
+		
+		in_part_path = f"/{redshift}/{in_fol_temp}{phase}/"
+		shells_path = f"/{redshift}/{in_fol_temp}{phase}/"
+		path_instance = Paths_LC(config_file, args, in_part_path, input_name, shells_path, output_name)
 
-	lc_instance.generate_shells(path_instance, snapshot="", cutsky=True, nproc=16, Nsubboxes=216)
+		lc_instance.generate_shells(path_instance, snapshot="", cutsky=True, nproc=16, Nsubboxes=216)
 
-	foot_nz_instance.shell(path_instance, i, nproc=64, todo=3)
+		foot_nz_instance.shell(path_instance, i, nproc=64, todo=3)
 
-	out_fits = path_instance.dir_out + redshift + "/fits/cutsky_ " + galtype + "_" + redshift + "_" + in_fol_temp + "{}"
-	convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=foot_nz_instance.boxL, seed=i, max_seed=2000)
+		out_fits = path_instance.dir_out + redshift + "/fits/cutsky_" + galtype + "_" + redshift + "_" + in_fol_temp + "{}"
+		convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=foot_nz_instance.boxL, seed=i, max_seed=2000)
+
+def random_EZmock(args, galtype="QSO", in_fol_temp="EZmock_B2000G512Z1.4N1014636_b0.053d1.13r0c0.6_seed"):
+	config_file = f"./EZmock/config/config_EZmock_{galtype}_6Gpc.ini"
+
+	######### Instances
+	lc_instance = LC(config_file, args)
+	foot_nz_instance = FOOT_NZ(config_file, args, galtype=galtype)
+
+	init_phase = args.phase
+	final_phase = init_phase + 1
+	
+	for i in range(init_phase, final_phase, 1):
+		phase = str(int(i * 100))
+		print(phase, 5000 - i * 100 + 100)
+		input_name = galtype + "{}_SB{}_S" + phase + ".fits"
+		output_name = galtype + "{}_SB{}_S" + phase
+		
+		in_part_path = f"/{in_fol_temp}{phase}/"
+		shells_path = f"/{in_fol_temp}{phase}/"
+		path_instance = Paths_LC(config_file, args, in_part_path, input_name, shells_path, output_name)
+
+		lc_instance.generate_shells(path_instance, snapshot="", cutsky=True, nproc=16, Nsubboxes=216)
+
+		foot_nz_instance.shell(path_instance, i, nproc=64, todo=3)
+
+		out_fits = path_instance.dir_out + "/fits/cutsky_" + galtype + "_" + in_fol_temp + "{}"
+		convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=foot_nz_instance.boxL, seed=i * 100, max_seed=5000)
 
 
 def main():
@@ -180,12 +211,17 @@ def main():
 	if args.galaxy == "QSO":
 		# cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B2000G512Z1.4N1014636_b0.053d1.13r0c0.6_seed")
 		cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B6000G1536Z1.4N27395172_b0.053d1.13r0c0.6_seed")
+		# random_EZmock(args, galtype="QSO", in_fol_temp="S")
 	elif args.galaxy == "LRG":
 		# cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B2000G512Z0.8N8015724_b0.385d4r169c0.3_seed")
 		cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B6000G1536Z0.8N216424548_b0.385d4r169c0.3_seed")
-	# elif args.galaxy = "ELG":
-	# 	cutsky_EZmock(args, galtype="ELG", redshift="z1.100", in_fol_temp="EZmock_B2000G512Z1.1N24000470_b0.345d1.45r40c0.05_seed")
-	# 	# cutsky_EZmock(args, galtype="ELG", redshift="z1.100", in_fol_temp="EZmock_B6000G1536Z1.1N648012690_b0.345d1.45r40c0.05_seed")
+		# random_EZmock(args, galtype="LRG", in_fol_temp="S")
+
+	elif args.galaxy = "ELG":
+		# cutsky_EZmock(args, galtype="ELG", redshift="z1.100", in_fol_temp="EZmock_B2000G512Z1.1N24000470_b0.345d1.45r40c0.05_seed")
+		cutsky_EZmock(args, galtype="ELG", redshift="z1.100", in_fol_temp="EZmock_B6000G1536Z1.1N648012690_b0.345d1.45r40c0.05_seed")
+		# random_EZmock(args, galtype="ELG", in_fol_temp="S")
+
 	else:
 		print("ERROR: Choose between LRG QSO ELG")
 		exit()

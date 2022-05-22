@@ -151,15 +151,15 @@ class LC():
 		print(preffix + "using %d halos"%len(px))
 		
 		### For randoms
-		id_   = data['id']
+		# id_   = data['id']
 		vx = np.zeros(ngalbox)
 		vy = np.zeros(ngalbox)
 		vz = np.zeros(ngalbox)
 
 		### For DATA		
-		# vx    = data['vx']
-		# vy    = data['vy']
-		# vz    = data['vz']
+		vx    = data['vx']
+		vy    = data['vy']
+		vz    = data['vz']
 		
 		#-------------------------------------------------------------------
 
@@ -167,13 +167,14 @@ class LC():
 		totdec  = np.array([])
 		totz    = np.array([])
 		totdz   = np.array([])
-		# totvlos = np.array([])
-		# totpx   = np.array([])
-		# totpy   = np.array([])
-		# totpz   = np.array([])
+		totvlos = np.array([])
+		totpx   = np.array([])
+		totpy   = np.array([])
+		totpz   = np.array([])
 		
 		### For randoms
-		totid   = np.array([])
+		# totid   = np.array([])
+		totid   = 1
 		
 
 		[axx, axy, axz, ayx, ayy, ayz, azx, azy, azz] = self.rotation_matrix
@@ -206,13 +207,23 @@ class LC():
 						uy=sy[idx]/r[idx]
 						uz=sz[idx]/r[idx]
 						
-						qx=vx[idx]*1000.
-						qy=vy[idx]*1000.
-						qz=vz[idx]*1000.
+						vx_0 = vx[idx]
+						vy_0 = vy[idx]
+						vz_0 = vz[idx]
+
+						vx_1 = ne.evaluate("axx * vx_0 + axy * vy_0 + axz * vz_0")
+						vy_1 = ne.evaluate("ayx * vx_0 + ayy * vy_0 + ayz * vz_0")
+						vz_1 = ne.evaluate("azx * vx_0 + azy * vy_0 + azz * vz_0")
+
+
+						qx=vx_1*1000.
+						qy=vy_1*1000.
+						qz=vz_1*1000.
+
 						zp=zi[idx]
 						
 						### For randoms
-						idtmp = id_[idx]
+						# idtmp = id_[idx]
 						###
 
 						tht, phi = hp.vec2ang(np.c_[ux, uy, uz])
@@ -228,7 +239,7 @@ class LC():
 						# totvlos = np.append(totvlos,vlos/1000.) # to convert back to km/s
 						
 						### For randoms
-						totid   = np.append(totid, idtmp)
+						# totid   = np.append(totid, idtmp)
 						###
 
 		# return totid, totpx, totpy, totpz, totra, totdec, totz, totz + totdz, ngalbox #, totdz, totvlos
@@ -348,7 +359,7 @@ class LC():
 			counter_NGAL = 0
 			
 			### For randoms
-			id0_array = np.zeros(N_GAL_SHELL_ALL_SUBBOXES)
+			# id0_array = np.zeros(N_GAL_SHELL_ALL_SUBBOXES)
 			###
 
 			index_i = 0
@@ -365,7 +376,7 @@ class LC():
 				zz_rsd0_array[index_i: index_f] = shell_subbox_dict["zz_rsd0"]
 
 				### For randoms
-				id0_array[index_i: index_f]     = shell_subbox_dict["id0"]
+				# id0_array[index_i: index_f]     = shell_subbox_dict["id0"]
 				###
 
 				index_i = index_f 
@@ -379,7 +390,11 @@ class LC():
 				ff.create_dataset('galaxy/DEC',     data=dec0_array,   dtype=np.float32)
 				ff.create_dataset('galaxy/Z_RSD', 	  data=zz_rsd0_array, dtype=np.float32)
 				ff.create_dataset('galaxy/Z_COSMO', data=zz0_array,     dtype=np.float32)
-				ff.create_dataset('galaxy/ID', data=id0_array,     dtype=np.int32)
+				
+				### For randoms
+				# ff.create_dataset('galaxy/ID', data=id0_array,     dtype=np.int32)
+				###
+				
 				ff.attrs['NGAL'] = counter_NGAL
 
 			os.rename(out_file_tmp, out_file)
