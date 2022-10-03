@@ -70,7 +70,35 @@ def cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELGlowDens", redshift="z1.10
 		
 		out_fits = path_instance.dir_out + f"/{redshift}/fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
 		convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=foot_nz_instance.boxL)
-	
+
+
+def cutsky_ic_ABACUS(args, galtype="ELG", redshift="ic", snapshot=576):
+
+	in_fol_temp = "AbacusSummit_base_c000_ph"
+
+	config_file = f"./ABACUS/config/config_ABACUS_ic_{galtype}.ini"
+
+	######### Instances
+	# lc_instance = LC(config_file, args)
+	foot_nz_instance = FOOT_NZ(config_file, args, galtype=galtype)
+
+	# ######### CutSky
+	for i in range(0, 1):
+		phase = str(int(i)).zfill(3)
+		input_name = "subbox/ic_dens_{}_SB{}.fits"
+		output_name = "ic_dens_{}_SB{}"
+
+		shells_path = f"/{in_fol_temp}{phase}/"
+		in_part_path = f"/{in_fol_temp}{phase}/"
+		path_instance = Paths_LC(config_file, args, in_part_path, input_name, shells_path, output_name)
+
+		# lc_instance.generate_shells(path_instance, snapshot=snapshot, cutsky=True, nproc=20, Nsubboxes=64)
+
+		foot_nz_instance.shell(path_instance, i, nproc=20, todo=3)
+		
+		out_fits = path_instance.dir_out + f"/fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
+		convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=foot_nz_instance.boxL)
+
 
 def random_ABACUS(args, galtype="LRG", snapshot=20, gal_in_name="LRG"):
 	print(galtype)
@@ -133,7 +161,7 @@ def cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B2
 
 	
 	init_phase = args.phase
-	final_phase = init_phase + 1
+	final_phase = init_phase + 5
 	
 	for i in range(init_phase, final_phase, 1):
 		phase = str(int(i))
@@ -209,15 +237,16 @@ def main():
 	start = time.time()
 	
 	if args.galaxy == "QSO":
-		# cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B2000G512Z1.4N1014636_b0.053d1.13r0c0.6_seed")
-		cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B6000G1536Z1.4N27395172_b0.053d1.13r0c0.6_seed")
+		cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B2000G512Z1.4N1014636_b0.053d1.13r0c0.6_seed")
+		# cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B6000G1536Z1.4N27395172_b0.053d1.13r0c0.6_seed")
 		# random_EZmock(args, galtype="QSO", in_fol_temp="S")
 	elif args.galaxy == "LRG":
 		# cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B2000G512Z0.8N8015724_b0.385d4r169c0.3_seed")
-		cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B6000G1536Z0.8N216424548_b0.385d4r169c0.3_seed")
+		# cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B6000G1536Z0.8N216424548_b0.385d4r169c0.3_seed")
+		cutsky_ic_ABACUS(args, galtype="LRG", redshift="ic", snapshot=576)
 		# random_EZmock(args, galtype="LRG", in_fol_temp="S")
 
-	elif args.galaxy = "ELG":
+	elif args.galaxy == "ELG":
 		# cutsky_EZmock(args, galtype="ELG", redshift="z1.100", in_fol_temp="EZmock_B2000G512Z1.1N24000470_b0.345d1.45r40c0.05_seed")
 		cutsky_EZmock(args, galtype="ELG", redshift="z1.100", in_fol_temp="EZmock_B6000G1536Z1.1N648012690_b0.345d1.45r40c0.05_seed")
 		# random_EZmock(args, galtype="ELG", in_fol_temp="S")

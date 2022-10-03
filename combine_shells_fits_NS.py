@@ -54,8 +54,8 @@ def convert(inpath="test", out_file="test", galtype=None, boxL=2000, seed=0, max
     counter_NGC, counter_SGC = count_NGC_SGC(files)
 
     if galtype == "LRG":
-        data_fits_NGC = np.zeros(counter_NGC, dtype=[('RA', 'f4'), ('DEC', 'f4'), ('Z', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('NZ', 'f4'), ('NZ_MAIN', 'f4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4')])#, ('ID', 'i4')])
-        data_fits_SGC = np.zeros(counter_SGC, dtype=[('RA', 'f4'), ('DEC', 'f4'), ('Z', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('NZ', 'f4'), ('NZ_MAIN', 'f4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4')])#, ('ID', 'i4')])
+        data_fits_NGC = np.zeros(counter_NGC, dtype=[('RA', 'f4'), ('DEC', 'f4'), ('Z', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('NZ', 'f4'), ('NZ_MAIN', 'f4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'), ('DENSITY', 'f4')])#, ('ID', 'i4')])
+        data_fits_SGC = np.zeros(counter_SGC, dtype=[('RA', 'f4'), ('DEC', 'f4'), ('Z', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('NZ', 'f4'), ('NZ_MAIN', 'f4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'), ('DENSITY', 'f4')])#, ('ID', 'i4')])
     elif galtype == "QSO":
         data_fits_NGC = np.zeros(counter_NGC, dtype=[('RA', 'f4'), ('DEC', 'f4'), ('Z', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('NZ', 'f4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'), ('Z_ERR_3GAUSS', 'f4'), ('Z_ERR_SIG500', 'f4')])#, ('ID', 'i4')])
         data_fits_SGC = np.zeros(counter_SGC, dtype=[('RA', 'f4'), ('DEC', 'f4'), ('Z', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('NZ', 'f4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'), ('Z_ERR_3GAUSS', 'f4'), ('Z_ERR_SIG500', 'f4')])#, ('ID', 'i4')])
@@ -84,6 +84,8 @@ def convert(inpath="test", out_file="test", galtype=None, boxL=2000, seed=0, max
         z_cosmo_tmp = data['Z_COSMO'][()]
         status_tmp  = data['STATUS'][()]
 
+        ### For ic
+        dens_tmp = data["DENSITY"][()]
         ### For randoms
         # id_tmp      = data['ID'][()]
         ran_num_0_1_tmp  = data['RAN_NUM_0_1'][()]
@@ -104,6 +106,8 @@ def convert(inpath="test", out_file="test", galtype=None, boxL=2000, seed=0, max
             data_fits_NGC["STATUS"][index_i_NGC: index_f_NGC]  = status_tmp[idx_Y5_NGC]
             data_fits_NGC["NZ"][index_i_NGC: index_f_NGC]      = get_nz(z_cosmo_tmp[idx_Y5_NGC], galtype=galtype)
 
+            ### For ic
+            data_fits_NGC["DENSITY"][index_i_NGC: index_f_NGC]      = dens_tmp[idx_Y5_NGC]
             ### For randoms
             # data_fits_NGC["ID"][index_i_NGC: index_f_NGC]      = id_tmp[idx_Y5_NGC]
             
@@ -129,6 +133,8 @@ def convert(inpath="test", out_file="test", galtype=None, boxL=2000, seed=0, max
             data_fits_SGC["STATUS"][index_i_SGC: index_f_SGC]  = status_tmp[idx_Y5_SGC]
             data_fits_SGC["NZ"][index_i_SGC: index_f_SGC]      = get_nz(z_cosmo_tmp[idx_Y5_SGC], galtype=galtype)
             
+            ### For ic
+            data_fits_SGC["DENSITY"][index_i_SGC: index_f_SGC]      = dens_tmp[idx_Y5_SGC]
             ### For randoms
             # data_fits_SGC["ID"][index_i_SGC: index_f_SGC]      = id_tmp[idx_Y5_SGC]
             

@@ -5,23 +5,20 @@
 
 import sys
 import os
-import tracemalloc
-import time
 import configparser
 import multiprocessing as mp
+from astropy.io import fits
+import h5py
 
 import camb
 import numpy as np
 import healpy as hp
 import numexpr as ne
-ne.set_num_threads(4)
-
-from astropy.io import fits
-
-import h5py
 
 from rotation_matrix import RotationMatrix
-		
+
+ne.set_num_threads(4)
+
 def tp2rd(tht, phi):
 	""" convert theta,phi to ra/dec """
 	ra  = phi / np.pi * 180.0
@@ -49,18 +46,15 @@ class Paths_LC():
 		if self.dir_gcat is None:
 			self.dir_gcat      =  config.get('dir', 'dir_gcat')
 
-		self.dir_gcat = self.dir_gcat + in_part_path	
+		self.dir_gcat = self.dir_gcat + in_part_path
 		self.input_file = self.dir_gcat + self.input_name
 		self.shells_out_path = self.create_outpath()
 		self.begin_out_shell = self.shells_out_path + self.output_name
 
-	def create_outpath(self):	
-		start = time.time()
+	def create_outpath(self):
 		out_path = self.dir_out + "/"+ self.shells_path
-		print(out_path)
 		if not os.path.exists(out_path):
 			os.makedirs(out_path)
-		print("TIME: It took {} seconds to create the dir.".format(time.time()-start))
 		return out_path
 
 class LC():
@@ -68,11 +62,13 @@ class LC():
 		config     = configparser.ConfigParser()
 		config.read(config_file)
 
-		self.file_camb      =  config.get('dir', 'file_camb')
-		self.boxL           =  config.getint('sim', 'boxL')
-		self.shellwidth     =  config.getint('sim', 'shellwidth')
-		self.zmin       =  config.getfloat('sim', 'zmin')
-		self.zmax       =  config.getfloat('sim', 'zmax')
+		self.file_camb      = config.get('dir', 'file_camb')
+		self.boxL           = config.getint('sim', 'boxL')
+		self.shellwidth     = config.getint('sim', 'shellwidth')
+		self.zmin           = config.getfloat('sim', 'zmin')
+		self.zmax           = config.getfloat('sim', 'zmax')
+		self.rotate         = config.getboolean('sim', 'rotate')
+		self.mock_random_ic = config.get('sim', 'mock_random_ic')
 		self.origin  = [0, 0, 0]
 		self.clight  = 299792458.
 
@@ -85,8 +81,7 @@ class LC():
 
 
 	def run_camb(self):
-		#Load all parameters from camb file 
-		start = time.time()
+		#Load all parameters from camb file
 		pars = camb.read_ini(self.file_camb)
 		h    = pars.h
 		pars.set_for_lmax(2000, lens_potential_accuracy=3)
@@ -94,17 +89,14 @@ class LC():
 		pars.NonLinearModel.set_params(halofit_version='takahashi')
 		camb.set_feedback_level(level=100)
 		results   = camb.get_results(pars)
-		print("TIME: It took {} seconds to run the CAMB part.".format(time.time()-start))
 		return h, results
 
 
 	def compute_shellnums(self):
-		start = time.time()
-		shellnum_min = int(self.results.comoving_radial_distance(self.zmin)*self.h // self.shellwidth)
-		shellnum_max = int(self.results.comoving_radial_distance(self.zmax)*self.h // self.shellwidth + 1)
+		shellnum_min = int(self.results.comoving_radial_distance(self.zmin) * self.h // self.shellwidth)
+		shellnum_max = int(self.results.comoving_radial_distance(self.zmax) * self.h // self.shellwidth + 1)
 		shellnums = list(range(shellnum_min, shellnum_max+1))
 		print(f"INFO: There are {len(shellnums)} shells.")
-		print("TIME: It took {} seconds to run compute the shellnums.".format(time.time()-start))
 		return shellnums
 
 
@@ -112,178 +104,166 @@ class LC():
 		""" pre-select so that we're not loading non-intersecting blocks """
 		boxL = self.boxL
 		origin = self.origin
-		bvx=np.array([0, boxL, boxL, 0,    0,    boxL, boxL, 0])
-		bvy=np.array([0,    0, boxL, boxL, 0,    0,    boxL, boxL])
-		bvz=np.array([0,    0,   0,  0,    boxL, boxL, boxL, boxL])
+		bvx = np.array([0, boxL, boxL, 0,    0,    boxL, boxL, 0])
+		bvy = np.array([0,    0, boxL, boxL, 0,    0,    boxL, boxL])
+		bvz = np.array([0,    0,   0,  0,    boxL, boxL, boxL, boxL])
 
 		boo = 0
 		r   = np.zeros(8)
 		for i in range(0, 8):
-			sx  = (bvx[i] - origin[0] + boxL * xx);
-			sy  = (bvy[i] - origin[1] + boxL * yy);
-			sz  = (bvz[i] - origin[2] + boxL * zz);
-			r[i]= np.sqrt(sx * sx + sy * sy + sz * sz)
-		if chihigh<np.min(r):
-			boo=boo+1
-		if chilow>np.max(r):
-			boo=boo+1
-		if (boo==0):
+			sx   = (bvx[i] - origin[0] + boxL * xx)
+			sy   = (bvy[i] - origin[1] + boxL * yy)
+			sz   = (bvz[i] - origin[2] + boxL * zz)
+			r[i] = np.sqrt(sx * sx + sy * sy + sz * sz)
+		if chihigh < np.min(r):
+			boo = boo + 1
+		if chilow > np.max(r):
+			boo = boo+1
+
+		if boo == 0:
 			return True
 		else:
 			return False
 
 
 	def convert_xyz2rdz(self, data, preffix, chilow, chiupp):
-		""" Generates and saves a single lightcone shell """		
+		""" Generates and saves a single lightcone shell """
 		clight = self.clight
 		boxL = self.boxL
 		origin = self.origin
 
-		ntiles = int(np.ceil(chiupp/boxL))
-		print(preffix + "tiling [%dx%dx%d]"%(2*ntiles,2*ntiles,2*ntiles))
-		print(preffix + 'Generating map for halos in the range [%3.f - %.3f Mpc/h]'%(chilow,chiupp))
-		
+		ntiles = int(np.ceil(chiupp / boxL))
+		print(preffix + "tiling [%dx%dx%d]" % (2 * ntiles, 2 * ntiles, 2 * ntiles))
+		print(preffix + 'Generating map for halos in the range [%3.f - %.3f Mpc/h]' % (chilow, chiupp))
+
 		px    = data['x']
 		py    = data['y']
 		pz    =	data['z']
-		
-		ngalbox=len(px)
-		print(preffix + "using %d halos"%len(px))
-		
-		### For randoms
-		# id_   = data['id']
-		vx = np.zeros(ngalbox)
-		vy = np.zeros(ngalbox)
-		vz = np.zeros(ngalbox)
+		ngalbox = len(px)
 
-		### For DATA		
-		vx    = data['vx']
-		vy    = data['vy']
-		vz    = data['vz']
-		
+		if self.mock_random_ic == "mock":
+			vx    = data['vx']
+			vy    = data['vy']
+			vz    = data['vz']
+		elif self.mock_random_ic == "random":
+			id_ = data["id"]
+		elif self.mock_random_ic == "ic":
+			dens = data["density"]
+		else:
+			print(f"ERROR!!! generate_lc, convert_xyz2rdz: You should choose between: mock, random or ic. You have chosen {self.mock_random_ic}")
+			
 		#-------------------------------------------------------------------
 
 		totra   = np.array([])
 		totdec  = np.array([])
 		totz    = np.array([])
-		totdz   = np.array([])
-		totvlos = np.array([])
-		totpx   = np.array([])
-		totpy   = np.array([])
-		totpz   = np.array([])
-		
-		### For randoms
-		# totid   = np.array([])
-		totid   = 1
-		
+		tot_aux   = np.array([])
 
 		[axx, axy, axz, ayx, ayy, ayz, azx, azy, azz] = self.rotation_matrix
 
-		for xx in range(-ntiles,ntiles):
-			for yy in range(-ntiles,ntiles):
-				for zz in range(-ntiles,ntiles):
+		for xx in range(-ntiles, ntiles):
+			for yy in range(-ntiles, ntiles):
+				for zz in range(-ntiles, ntiles):
 
-					# slicehit = self.checkslicehit(chilow,chiupp,xx,yy,zz)             # Check if box intersects with shell
-					# slicehit = True
-					# if slicehit==True:
+					if not self.rotate:
+						slicehit = self.checkslicehit(chilow, chiupp, xx, yy, zz)             # Check if box intersects with shell
+						if not slicehit:
+							continue
 
-					sx_0  = ne.evaluate("px -%d + boxL * xx"%origin[0])
-					sy_0  = ne.evaluate("py -%d + boxL * yy"%origin[1])
-					sz_0  = ne.evaluate("pz -%d + boxL * zz"%origin[2])
-					
-					sx = ne.evaluate("axx * sx_0 + axy * sy_0 + axz * sz_0")
-					sy = ne.evaluate("ayx * sx_0 + ayy * sy_0 + ayz * sz_0")
-					sz = ne.evaluate("azx * sx_0 + azy * sy_0 + azz * sz_0")
+					sx_0  = ne.evaluate("px - %d + boxL * xx" % origin[0])
+					sy_0  = ne.evaluate("py - %d + boxL * yy" % origin[1])
+					sz_0  = ne.evaluate("pz - %d + boxL * zz" % origin[2])
 
-					r   = ne.evaluate("sqrt(sx*sx + sy*sy + sz*sz)")
-					
-					zi  = self.results.redshift_at_comoving_radial_distance(r/self.h) # interpolated distance from position
-										
-					idx = np.where((r>chilow) & (r<chiupp))[0]              # only select halos that are within the shell
+					if self.rotate:
+						sx = ne.evaluate("axx * sx_0 + axy * sy_0 + axz * sz_0")
+						sy = ne.evaluate("ayx * sx_0 + ayy * sy_0 + ayz * sz_0")
+						sz = ne.evaluate("azx * sx_0 + azy * sy_0 + azz * sz_0")
+					else:
+						sx = sx_0
+						sy = sy_0
+						sz = sz_0
+
+					r   = ne.evaluate("sqrt(sx * sx + sy * sy + sz * sz)")
+					zi  = self.results.redshift_at_comoving_radial_distance(r / self.h) # interpolated distance from position
+
+					idx = np.where((r > chilow) & (r < chiupp))[0]              # only select halos that are within the shell
 
 					if idx.size!=0:
-						
-						ux=sx[idx]/r[idx]
-						uy=sy[idx]/r[idx]
-						uz=sz[idx]/r[idx]
-						
-						vx_0 = vx[idx]
-						vy_0 = vy[idx]
-						vz_0 = vz[idx]
+						ux = sx[idx] / r[idx]
+						uy = sy[idx] / r[idx]
+						uz = sz[idx] / r[idx]
+						zp = zi[idx]
 
-						vx_1 = ne.evaluate("axx * vx_0 + axy * vy_0 + axz * vz_0")
-						vy_1 = ne.evaluate("ayx * vx_0 + ayy * vy_0 + ayz * vz_0")
-						vz_1 = ne.evaluate("azx * vx_0 + azy * vy_0 + azz * vz_0")
+						if self.mock_random_ic == "mock":
+							vx_0 = vx[idx]
+							vy_0 = vy[idx]
+							vz_0 = vz[idx]
 
+							if self.rotate:
+								vx_1 = ne.evaluate("axx * vx_0 + axy * vy_0 + axz * vz_0")
+								vy_1 = ne.evaluate("ayx * vx_0 + ayy * vy_0 + ayz * vz_0")
+								vz_1 = ne.evaluate("azx * vx_0 + azy * vy_0 + azz * vz_0")
+							else:
+								vx_1 = vx_0
+								vy_1 = vy_0
+								vz_1 = vz_0
 
-						qx=vx_1*1000.
-						qy=vy_1*1000.
-						qz=vz_1*1000.
+							qx = vx_1 * 1000.
+							qy = vy_1 * 1000.
+							qz = vz_1 * 1000.
 
-						zp=zi[idx]
-						
-						### For randoms
-						# idtmp = id_[idx]
-						###
+							vlos    = ne.evaluate("qx * ux + qy * uy + qz * uz")
+							dz      = ne.evaluate("(vlos / clight) * (1 + zp)")
+							tot_aux   = np.append(tot_aux , zp + dz)
+						elif self.mock_random_ic == "random":
+							tot_aux   = np.append(tot_aux , id_[idx])
+						elif self.mock_random_ic == "ic":
+							tot_aux   = np.append(tot_aux, dens[idx])
 
 						tht, phi = hp.vec2ang(np.c_[ux, uy, uz])
-						ra,dec  = tp2rd(tht,phi)
-						
-						vlos    = ne.evaluate("qx*ux + qy*uy + qz*uz")
-						dz      = ne.evaluate("(vlos/clight)*(1+zp)")
+						ra, dec  = tp2rd(tht, phi)
 
-						totra   = np.append(totra,ra)
-						totdec  = np.append(totdec,dec)
-						totz    = np.append(totz,zp)
-						totdz   = np.append(totdz,dz)
-						# totvlos = np.append(totvlos,vlos/1000.) # to convert back to km/s
-						
-						### For randoms
-						# totid   = np.append(totid, idtmp)
-						###
+						totra   = np.append(totra , ra)
+						totdec  = np.append(totdec, dec)
+						totz    = np.append(totz  , zp)
 
-		# return totid, totpx, totpy, totpz, totra, totdec, totz, totz + totdz, ngalbox #, totdz, totvlos
-		return totid, totra, totdec, totz, totz + totdz, ngalbox
+		return totra, totdec, totz, tot_aux, ngalbox
 
 
 	def getnearestsnap(self, zmid):
 		""" get the closest snapshot """
 		# zsnap  = 1/self.alist[:,1]-1.
-		zsnap  = 1/self.alist[:, 2] - 1.
-		index_ = np.argmin(np.abs(zsnap-zmid))
+		zsnap  = 1 / self.alist[:, 2] - 1.
+		index_ = np.argmin(np.abs(zsnap - zmid))
 
 		return int(self.alist[index_, 0]), self.alist[index_, 3]
 
 
 	def obtain_data(self, subbox, shellnum, shellnums, snapshot, cutsky, path_instance):
-		preffix = f"[shellnum={shellnum}; subbox={subbox}] "
+		preffix = f"[shellnum={shellnum}; subbox={subbox}]: "
 
 		chilow = self.shellwidth*(shellnum+0)
 		chiupp = self.shellwidth*(shellnum+1)
 		chimid = 0.5*(chilow+chiupp)
-		
+
 		if not cutsky:
 			zmid        = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
 			nearestsnap, nearestred = self.getnearestsnap(zmid)
 
 			infile = path_instance.input_file.format("z%.3f"%(nearestred), nearestsnap, subbox)
-			print(infile)
+			print(f"INFO: The input file is: {infile}")
 		else:
 			infile = path_instance.input_file.format(snapshot, subbox)
 
-		
 		try:
 			hdul = fits.open(infile, memmap=False)
 			data = hdul[1].data
 			hdul.close()
-			print(f"Subbox {subbox}: The size of the data is:", len(data["x"]))
+			print(f"INFO: The number of halos of subbox {subbox} is {len(data["x"])}")
 
 		except IOError:
 			print(preffix + f"WARNING: Couldn't open {infile}.", file=sys.stderr)
 			sys.exit()
-		
-		# current, peak_ = tracemalloc.get_traced_memory()
-		# print(f"Current memory usage is {current / 10**6}MB; Peak was {peak_ / 10**6}MB")
 
 		return data, preffix, chilow, chiupp
 
@@ -292,23 +272,22 @@ class LC():
 
 		### Read Data
 		data, preffix, chilow, chiupp = self.obtain_data(subbox, shellnum, shellnums, snapshot, cutsky, path_instance)
-		
+
 		### Convert XYZ to RA DEC Z
-		id0, ra0, dec0, zz0, zz_rsd0, ngalbox = self.convert_xyz2rdz(data, preffix, chilow, chiupp)
-		
-		n_mean = ngalbox/(1.* self.boxL**3)
-		
-		shell_subbox_dict = {"id0":id0, "ra0": ra0, "dec0": dec0, "zz0": zz0, "zz_rsd0": zz_rsd0}
+		ra0, dec0, zz0, aux0, ngalbox = self.convert_xyz2rdz(data, preffix, chilow, chiupp)
+
+
+		shell_subbox_dict = {"ra0": ra0, "dec0": dec0, "zz0": zz0, "aux0": aux0}
 		return_dict[subbox] = shell_subbox_dict
 
-		return_dict["NGAL" + str(subbox)] = ngalbox 
+		return_dict["NGAL" + str(subbox)] = ngalbox
 
 
 	def generate_shells(self, path_instance, snapshot=999, cutsky=True, nproc=5, Nsubboxes=27):
 		jobs = []
 		ne.set_num_threads(4)
 		manager = mp.Manager()
-		
+
 		shellnums = self.compute_shellnums()
 		for i, shellnum in enumerate(shellnums):
 			out_file_beg = path_instance.begin_out_shell + "_shell_" + str(shellnum)
@@ -316,7 +295,7 @@ class LC():
 			chilow = self.shellwidth*(shellnum+0)
 			chiupp = self.shellwidth*(shellnum+1)
 			chimid = 0.5*(chilow+chiupp)
-			
+
 			zlow        = self.results.redshift_at_comoving_radial_distance(chilow / self.h)
 			if zlow > self.zmax:
 				continue
@@ -324,14 +303,14 @@ class LC():
 			if not cutsky:
 				print("LightCone")
 				zmid        = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
-				nearestsnap, nearestred = self.getnearestsnap(zmid)
+				nearestsnap, _ = self.getnearestsnap(zmid)
 				snapshot = nearestsnap
 
 			out_file_beg = out_file_beg.format(snapshot, "all")
 			# Don't reprocess files already done
 			if os.path.isfile(out_file_beg+".h5py"):
 				continue
-		
+
 			return_dict = manager.dict()
 			counter = 0
 			for subbox in range(Nsubboxes):
@@ -345,56 +324,52 @@ class LC():
 					counter = 0
 					jobs = []
 
-			### Count the number of galaxies per shell			
+			### Count the number of galaxies per shell
 			N_GAL_SHELL_ALL_SUBBOXES = 0
 			for subbox in range(Nsubboxes):
 				shell_subbox_dict = return_dict[subbox]
 				N_GAL_SHELL_ALL_SUBBOXES += len(shell_subbox_dict["ra0"])
-			
-			### Declare arrays of size 
+
+			### Declare arrays of size
 			ra0_array = np.zeros(N_GAL_SHELL_ALL_SUBBOXES)
 			dec0_array = np.zeros(N_GAL_SHELL_ALL_SUBBOXES)
 			zz0_array = np.zeros(N_GAL_SHELL_ALL_SUBBOXES)
-			zz_rsd0_array = np.zeros(N_GAL_SHELL_ALL_SUBBOXES)
-			counter_NGAL = 0
 			
-			### For randoms
-			# id0_array = np.zeros(N_GAL_SHELL_ALL_SUBBOXES)
-			###
+			aux0_array = np.zeros(N_GAL_SHELL_ALL_SUBBOXES)
+			counter_NGAL = 0
 
+			### Fill the arrays
 			index_i = 0
 			index_f = 0
 			for subbox in range(Nsubboxes):
 				counter_NGAL += return_dict["NGAL" + str(subbox)]
 				shell_subbox_dict = return_dict[subbox]
-			
+
 				index_f = index_i + len(shell_subbox_dict["ra0"])
 
 				ra0_array[index_i: index_f]     = shell_subbox_dict["ra0"]
 				dec0_array[index_i: index_f]    = shell_subbox_dict["dec0"]
 				zz0_array[index_i: index_f]     = shell_subbox_dict["zz0"]
-				zz_rsd0_array[index_i: index_f] = shell_subbox_dict["zz_rsd0"]
+				aux0_array[index_i: index_f] = shell_subbox_dict["aux0"]
 
-				### For randoms
-				# id0_array[index_i: index_f]     = shell_subbox_dict["id0"]
-				###
-
-				index_i = index_f 
+				index_i = index_f
 
 			out_file_tmp = out_file_beg + "_tmp.h5py"
 			out_file 	 = out_file_beg + ".h5py"
 
-			with h5py.File(out_file_tmp, 'w') as ff:
-				ff.create_group('galaxy')
-				ff.create_dataset('galaxy/RA',      data=ra0_array,    dtype=np.float32)
-				ff.create_dataset('galaxy/DEC',     data=dec0_array,   dtype=np.float32)
-				ff.create_dataset('galaxy/Z_RSD', 	  data=zz_rsd0_array, dtype=np.float32)
-				ff.create_dataset('galaxy/Z_COSMO', data=zz0_array,     dtype=np.float32)
-				
-				### For randoms
-				# ff.create_dataset('galaxy/ID', data=id0_array,     dtype=np.int32)
-				###
-				
-				ff.attrs['NGAL'] = counter_NGAL
+			with h5py.File(out_file_tmp, 'w') as out_file:
+				out_file.create_group('galaxy')
+				out_file.create_dataset('galaxy/RA',      data=ra0_array,    dtype=np.float32)
+				out_file.create_dataset('galaxy/DEC',     data=dec0_array,   dtype=np.float32)
+				out_file.create_dataset('galaxy/Z_COSMO', data=zz0_array,     dtype=np.float32)
+
+				if self.mock_random_ic == "mock":
+					out_file.create_dataset('galaxy/Z_RSD',   data=aux0_array, dtype=np.float32)
+				elif self.mock_random_ic == "random":
+					out_file.create_dataset('galaxy/ID',      data=aux0_array, dtype=np.int32)
+				elif self.mock_random_ic == "ic":
+					out_file.create_dataset('galaxy/DENSITY', data=aux0_array, dtype=np.float32)
+
+				out_file.attrs['NGAL'] = counter_NGAL
 
 			os.rename(out_file_tmp, out_file)
