@@ -87,7 +87,7 @@ def downsample_aux(z_cosmo, galtype, ran, n_mean, ask="downsample"):
 def downsample(boxL, galtype, ngalbox, z_cosmo):
 	""" downsample galaxies following n(z) model specified in galtype"""
 
-	n_mean = ngalbox/(boxL**3)
+	n_mean = ngalbox / (boxL**3)
 
 	ran         = np.random.rand(len(z_cosmo))
 
@@ -131,35 +131,17 @@ def apply_footprint(ra, dec, footprint_mask):
 	return newbits
 
 
-def determine_return_shellnum(file_, begin_out_shell):
-	filename = os.path.basename(file_)
-	index_i = filename.find("_shell_")
-	index_f = filename.find(".h5py")
-	shellnum = filename[index_i + 7: index_f]
-
-	files = glob.glob(begin_out_shell.format("*", "*") + "_shell_" + shellnum + ".h5py")
-	if len(files) != 1:
-		print("ERROR: return_shellnum", len(files))
-		sys.exit()
-	elif not os.path.basename(files[0]):
-		print("ERROR: return_shellnum", len(files), files[0])
-		sys.exit()
-	else:
-		return int(shellnum)
-
-
 def generate_shell(args):
-	file_, boxL, galtype, tracer_id, footprint_mask, todo, begin_out_shell, cat_seed = args
+	file_, boxL, galtype, tracer_id, footprint_mask, todo, cat_seed = args
+	print(f"INFO: Read {file_}")
 
-	shellnum = determine_return_shellnum(file_, begin_out_shell)
+	f = h5py.File(file_, 'r+')
 
-	print(f"INFO: Read {file_}; Check shell number {shellnum}")
-
+	shellnum = f.attrs["SHELLNUM"]
 	unique_seed = tracer_id * 500500 + 250 * cat_seed + shellnum
 	print("INFO: UNIQUE SEED:", unique_seed, flush=True)
 	np.random.seed(unique_seed)
 
-	f = h5py.File(file_, 'r+')
 	data = f['galaxy']
 	ra = data['RA'][()]
 	dec = data['DEC'][()]
@@ -222,7 +204,7 @@ class FOOT_NZ():
 
 		infiles = glob.glob(path_instance.shells_out_path + "/*.h5py")
 
-		args = product(infiles, [self.boxL], [self.galtype], [self.tracer_id], [footprint_mask], [todo], [path_instance.begin_out_shell], [cat_seed])
+		args = product(infiles, [self.boxL], [self.galtype], [self.tracer_id], [footprint_mask], [todo], [cat_seed])
 
 		if nproc > len(infiles):
 			nproc = len(infiles)
@@ -238,5 +220,5 @@ class FOOT_NZ():
 		infiles = glob.glob(path_instance.shells_out_path + "/*.h5py")
 
 		for file_ in infiles:
-			args = [file_, self.boxL, self.galtype, self.tracer_id, footprint_mask, todo, path_instance.begin_out_shell, cat_seed]
+			args = [file_, self.boxL, self.galtype, self.tracer_id, footprint_mask, todo, cat_seed]
 			generate_shell(args)

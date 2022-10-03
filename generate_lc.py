@@ -370,6 +370,7 @@ class LC():
 				elif self.mock_random_ic == "ic":
 					out_file.create_dataset('galaxy/DENSITY', data=aux0_array, dtype=np.float32)
 
-				out_file.attrs['NGAL'] = counter_NGAL
+				out_file.attrs['NGAL']     = counter_NGAL
+				out_file.attrs['SHELLNUM'] = shellnum
 
 			os.rename(out_file_tmp, out_file)
