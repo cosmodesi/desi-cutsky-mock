@@ -26,49 +26,55 @@ def tp2rd(tht, phi):
 	return ra, dec
 
 
-class Paths_LC():
-	def __init__(self, config_file, args, in_part_path, input_name, shells_path, output_name):
+class Paths():
+	def __init__(self, config_file, args, in_part_path, input_name, out_part_path, output_name):
 		config     = configparser.ConfigParser()
 		config.read(config_file)
 
 		self.dir_out                 = args.dir_out
+		self.dir_in                  = args.dir_in
+		
+		### Both input and output names have empty regions
+		### that need to be completed using ".format()" 
 		self.input_name              = input_name
 		self.output_name             = output_name
-		self.shells_path 			 = shells_path
-		self.dir_gcat                = args.dir_gcat
+
+		self.in_part_path 			 = in_part_path		
+		self.out_part_path 			 = out_part_path
 
 		if self.dir_out is None:
-			self.dir_out       =  config.get('dir', 'dir_out')
-		if self.input_name is None:
-			self.input_name    =  config.get('dir', 'input_name')
-		if self.shells_path is None:
-			self.shells_path   =  config.get('dir', 'shells_path')
-		if self.dir_gcat is None:
-			self.dir_gcat      =  config.get('dir', 'dir_gcat')
+			self.dir_out     =  config.get('dir', 'dir_out')
+		if self.dir_in is None:
+			self.dir_in      =  config.get('dir', 'dir_in')
 
-		self.dir_gcat = self.dir_gcat + in_part_path
-		self.input_file = self.dir_gcat + self.input_name
 		self.shells_out_path = self.create_outpath()
-		self.begin_out_shell = self.shells_out_path + self.output_name
+
+		self.input_file       = self.dir_in + self.in_part_path + self.input_name		
+		self.output_file      = self.shells_out_path + self.output_name
 
 	def create_outpath(self):
-		out_path = self.dir_out + "/"+ self.shells_path
+		out_path = self.dir_out + "/"+ self.out_part_path
 		if not os.path.exists(out_path):
 			os.makedirs(out_path)
 		return out_path
 
-class LC():
+
+class LightCone():
 	def __init__(self, config_file, args):
 		config     = configparser.ConfigParser()
 		config.read(config_file)
 
 		self.file_camb      = config.get('dir', 'file_camb')
-		self.boxL           = config.getint('sim', 'boxL')
+		self.box_length     = config.getint('sim', 'box_length')
 		self.shellwidth     = config.getint('sim', 'shellwidth')
 		self.zmin           = config.getfloat('sim', 'zmin')
 		self.zmax           = config.getfloat('sim', 'zmax')
 		self.rotate         = config.getboolean('sim', 'rotate')
-		self.mock_random_ic = config.get('sim', 'mock_random_ic')
+
+		self.mock_random_ic = args.mock_random_ic
+		if self.mock_random_ic is None:
+			self.mock_random_ic = config.get('sim', 'mock_random_ic')
+
 		self.origin  = [0, 0, 0]
 		self.clight  = 299792458.
 
@@ -102,18 +108,18 @@ class LC():
 
 	def checkslicehit(self, chilow, chihigh, xx, yy, zz):
 		""" pre-select so that we're not loading non-intersecting blocks """
-		boxL = self.boxL
+		box_length = self.box_length
 		origin = self.origin
-		bvx = np.array([0, boxL, boxL, 0,    0,    boxL, boxL, 0])
-		bvy = np.array([0,    0, boxL, boxL, 0,    0,    boxL, boxL])
-		bvz = np.array([0,    0,   0,  0,    boxL, boxL, boxL, boxL])
+		bvx = np.array([0, box_length, box_length, 0,    0,    box_length, box_length, 0])
+		bvy = np.array([0,    0, box_length, box_length, 0,    0,    box_length, box_length])
+		bvz = np.array([0,    0,   0,  0,    box_length, box_length, box_length, box_length])
 
 		boo = 0
 		r   = np.zeros(8)
 		for i in range(0, 8):
-			sx   = (bvx[i] - origin[0] + boxL * xx)
-			sy   = (bvy[i] - origin[1] + boxL * yy)
-			sz   = (bvz[i] - origin[2] + boxL * zz)
+			sx   = (bvx[i] - origin[0] + box_length * xx)
+			sy   = (bvy[i] - origin[1] + box_length * yy)
+			sz   = (bvz[i] - origin[2] + box_length * zz)
 			r[i] = np.sqrt(sx * sx + sy * sy + sz * sz)
 		if chihigh < np.min(r):
 			boo = boo + 1
@@ -126,15 +132,15 @@ class LC():
 			return False
 
 
-	def convert_xyz2rdz(self, data, preffix, chilow, chiupp):
+	def convert_xyz2rdz(self, data, prefix, chilow, chiupp):
 		""" Generates and saves a single lightcone shell """
 		clight = self.clight
-		boxL = self.boxL
+		box_length = self.box_length
 		origin = self.origin
 
-		ntiles = int(np.ceil(chiupp / boxL))
-		print(preffix + "tiling [%dx%dx%d]" % (2 * ntiles, 2 * ntiles, 2 * ntiles))
-		print(preffix + 'Generating map for halos in the range [%3.f - %.3f Mpc/h]' % (chilow, chiupp))
+		ntiles = int(np.ceil(chiupp / box_length))
+		print(prefix + "tiling [%dx%dx%d]" % (2 * ntiles, 2 * ntiles, 2 * ntiles))
+		print(prefix + 'Generating map for halos in the range [%3.f - %.3f Mpc/h]' % (chilow, chiupp))
 
 		px    = data['x']
 		py    = data['y']
@@ -170,9 +176,9 @@ class LC():
 						if not slicehit:
 							continue
 
-					sx_0  = ne.evaluate("px - %d + boxL * xx" % origin[0])
-					sy_0  = ne.evaluate("py - %d + boxL * yy" % origin[1])
-					sz_0  = ne.evaluate("pz - %d + boxL * zz" % origin[2])
+					sx_0  = ne.evaluate("px - %d + box_length * xx" % origin[0])
+					sy_0  = ne.evaluate("py - %d + box_length * yy" % origin[1])
+					sz_0  = ne.evaluate("pz - %d + box_length * zz" % origin[2])
 
 					if self.rotate:
 						sx = ne.evaluate("axx * sx_0 + axy * sy_0 + axz * sz_0")
@@ -239,42 +245,26 @@ class LC():
 		return int(self.alist[index_, 0]), self.alist[index_, 3]
 
 
-	def obtain_data(self, subbox, shellnum, shellnums, snapshot, cutsky, path_instance):
-		preffix = f"[shellnum={shellnum}; subbox={subbox}]: "
-
-		chilow = self.shellwidth*(shellnum+0)
-		chiupp = self.shellwidth*(shellnum+1)
-		chimid = 0.5*(chilow+chiupp)
-
-		if not cutsky:
-			zmid        = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
-			nearestsnap, nearestred = self.getnearestsnap(zmid)
-
-			infile = path_instance.input_file.format("z%.3f"%(nearestred), nearestsnap, subbox)
-			print(f"INFO: The input file is: {infile}")
-		else:
-			infile = path_instance.input_file.format(snapshot, subbox)
-
+	def obtain_data(self, infile, prefix):
 		try:
 			hdul = fits.open(infile, memmap=False)
 			data = hdul[1].data
 			hdul.close()
-			print(f"INFO: The number of halos of subbox {subbox} is {len(data["x"])}")
+			ngalbox = len(data["x"])
+			print(prefix + f"INFO: The input file is {infile} and it has {ngalbox} halos")
 
 		except IOError:
-			print(preffix + f"WARNING: Couldn't open {infile}.", file=sys.stderr)
+			print(prefix + f"WARNING: Couldn't open {infile}.", file=sys.stderr)
 			sys.exit()
+		return data
 
-		return data, preffix, chilow, chiupp
 
-
-	def generate_shell(self, subbox, i, shellnum, shellnums, snapshot, cutsky, path_instance, return_dict):
-
+	def generate_shell(self, infile, subbox, prefix, chilow, chiupp, return_dict):
 		### Read Data
-		data, preffix, chilow, chiupp = self.obtain_data(subbox, shellnum, shellnums, snapshot, cutsky, path_instance)
+		data = self.obtain_data(infile, prefix)
 
 		### Convert XYZ to RA DEC Z
-		ra0, dec0, zz0, aux0, ngalbox = self.convert_xyz2rdz(data, preffix, chilow, chiupp)
+		ra0, dec0, zz0, aux0, ngalbox = self.convert_xyz2rdz(data, prefix, chilow, chiupp)
 
 
 		shell_subbox_dict = {"ra0": ra0, "dec0": dec0, "zz0": zz0, "aux0": aux0}
@@ -283,81 +273,83 @@ class LC():
 		return_dict["NGAL" + str(subbox)] = ngalbox
 
 
-	def generate_shells(self, path_instance, snapshot=999, cutsky=True, nproc=5, Nsubboxes=27):
-		jobs = []
-		ne.set_num_threads(4)
-		manager = mp.Manager()
-
+	def generate_shells(self, path_instance, snapshot=None, redshift=None, cutsky=True, nproc=5, n_subboxes=27, cat_seed=None):
 		shellnums = self.compute_shellnums()
-		for i, shellnum in enumerate(shellnums):
-			out_file_beg = path_instance.begin_out_shell + "_shell_" + str(shellnum)
+		for shellnum in shellnums:
+			chilow = self.shellwidth * (shellnum + 0)
+			chiupp = self.shellwidth * (shellnum + 1)
+			chimid = 0.5 * (chilow + chiupp)
 
-			chilow = self.shellwidth*(shellnum+0)
-			chiupp = self.shellwidth*(shellnum+1)
-			chimid = 0.5*(chilow+chiupp)
-
-			zlow        = self.results.redshift_at_comoving_radial_distance(chilow / self.h)
+			# Check whether the minimum redshift of the shell is outside the redshift range of interest 
+			zlow = self.results.redshift_at_comoving_radial_distance(chilow / self.h)
 			if zlow > self.zmax:
 				continue
 
 			if not cutsky:
-				print("LightCone")
-				zmid        = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
-				nearestsnap, _ = self.getnearestsnap(zmid)
+				print("Light-cone")
+				zmid = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
+				nearestsnap, nearestred = self.getnearestsnap(zmid)
+				
 				snapshot = nearestsnap
+				redshift = "z%.3f"%(nearestred)
 
-			out_file_beg = out_file_beg.format(snapshot, "all")
+			out_file_name = path_instance.output_file.format(snapshot=snapshot, shellnum=str(shellnum))
+
 			# Don't reprocess files already done
-			if os.path.isfile(out_file_beg+".h5py"):
+			if os.path.isfile(out_file_name):
 				continue
 
+			jobs = []
+			manager = mp.Manager()
 			return_dict = manager.dict()
 			counter = 0
-			for subbox in range(Nsubboxes):
-				p = mp.Process(target=self.generate_shell, args=(subbox, i, shellnum, shellnums, snapshot, cutsky, path_instance, return_dict))
+			for subbox in range(n_subboxes):
+				infile = path_instance.input_file.format(redshift=redshift, snapshot=snapshot, subbox=subbox)
+				prefix = f"[shellnum={shellnum}; subbox={subbox}]: "
+
+				p = mp.Process(target=self.generate_shell, args=(infile, subbox, prefix, chilow, chiupp, return_dict))
 				jobs.append(p)
 				p.start()
 				counter = counter + 1
-				if (counter == nproc) or (subbox == Nsubboxes - 1):
+				if (counter == nproc) or (subbox == n_subboxes - 1):
 					for proc in jobs:
 						proc.join()
 					counter = 0
 					jobs = []
 
 			### Count the number of galaxies per shell
-			N_GAL_SHELL_ALL_SUBBOXES = 0
-			for subbox in range(Nsubboxes):
+			n_gal_shell_all_subboxes = 0
+			for subbox in range(n_subboxes):
 				shell_subbox_dict = return_dict[subbox]
-				N_GAL_SHELL_ALL_SUBBOXES += len(shell_subbox_dict["ra0"])
+				n_gal_shell_all_subboxes += len(shell_subbox_dict["ra0"])
 
 			### Declare arrays of size
-			ra0_array = np.zeros(N_GAL_SHELL_ALL_SUBBOXES)
-			dec0_array = np.zeros(N_GAL_SHELL_ALL_SUBBOXES)
-			zz0_array = np.zeros(N_GAL_SHELL_ALL_SUBBOXES)
+			ra0_array = np.zeros(n_gal_shell_all_subboxes)
+			dec0_array = np.zeros(n_gal_shell_all_subboxes)
+			zz0_array = np.zeros(n_gal_shell_all_subboxes)
 			
-			aux0_array = np.zeros(N_GAL_SHELL_ALL_SUBBOXES)
-			counter_NGAL = 0
+			aux0_array = np.zeros(n_gal_shell_all_subboxes)
+			counter_ngal = 0
 
 			### Fill the arrays
 			index_i = 0
 			index_f = 0
-			for subbox in range(Nsubboxes):
-				counter_NGAL += return_dict["NGAL" + str(subbox)]
+			for subbox in range(n_subboxes):
+				counter_ngal += return_dict["NGAL" + str(subbox)]
 				shell_subbox_dict = return_dict[subbox]
 
 				index_f = index_i + len(shell_subbox_dict["ra0"])
 
-				ra0_array[index_i: index_f]     = shell_subbox_dict["ra0"]
-				dec0_array[index_i: index_f]    = shell_subbox_dict["dec0"]
-				zz0_array[index_i: index_f]     = shell_subbox_dict["zz0"]
+				ra0_array[index_i: index_f]  = shell_subbox_dict["ra0"]
+				dec0_array[index_i: index_f] = shell_subbox_dict["dec0"]
+				zz0_array[index_i: index_f]  = shell_subbox_dict["zz0"]
 				aux0_array[index_i: index_f] = shell_subbox_dict["aux0"]
 
 				index_i = index_f
 
-			out_file_tmp = out_file_beg + "_tmp.h5py"
-			out_file 	 = out_file_beg + ".h5py"
+			out_file_name_tmp  = out_file_name + "_tmp"
 
-			with h5py.File(out_file_tmp, 'w') as out_file:
+			with h5py.File(out_file_name_tmp, 'w') as out_file:
 				out_file.create_group('galaxy')
 				out_file.create_dataset('galaxy/RA',      data=ra0_array,    dtype=np.float32)
 				out_file.create_dataset('galaxy/DEC',     data=dec0_array,   dtype=np.float32)
@@ -370,7 +362,10 @@ class LC():
 				elif self.mock_random_ic == "ic":
 					out_file.create_dataset('galaxy/DENSITY', data=aux0_array, dtype=np.float32)
 
-				out_file.attrs['NGAL']     = counter_NGAL
+				out_file.attrs['NGAL']     = counter_ngal
 				out_file.attrs['SHELLNUM'] = shellnum
+				out_file.attrs['SNAPSHOT'] = snapshot
+				out_file.attrs['CAT_SEED'] = cat_seed
+				out_file.attrs['BOX_LENGTH'] = self.box_length
 
-			os.rename(out_file_tmp, out_file)
+			os.rename(out_file_name_tmp, out_file_name)

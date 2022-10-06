@@ -5,186 +5,106 @@
 
 import argparse
 
-from generate_lc import LC, Paths_LC
-from foot_nz import FOOT_NZ
+from generate_lc import LightCone, Paths
+from foot_nz import SurveyGeometry
 
 from combine_shells_fits_NS import convert
 
 
-
-def LC_ABACUS(args, galtype="QSO"):
+def LC_ABACUS(args, galtype=None):
+	in_fol_temp = "AbacusSummit_base_c000_ph"
 	config_file = f"./ABACUS/config/config_ABACUS_{galtype}.ini"
-	print(galtype)
 
 	######### Instances
-	lc_instance = LC(config_file, args)
-	foot_nz_instance = FOOT_NZ(config_file, args, galtype=galtype)
+	lightcone_instance = LightCone(config_file, args)
+	survey_geometry_instance = SurveyGeometry(config_file, args, galtype=galtype)
 
-	######### LC
+	######### LightCone
 	# for i in range(25):
 	i = args.phase
 	phase = str(int(i)).zfill(3)
-	input_name = galtype + "_snap{}_ph" + phase + ".gcat.sub{}.fits"
-	output_name = galtype + "_snap{}_ph" + phase + ".gcat.sub{}"
+	in_part_path = "/{redshift}/" + f"/{in_fol_temp}{phase}/"
+	input_name = galtype + "_snap{snapshot}_ph" + phase + ".gcat.sub{subbox}.fits"
 
-	in_part_path = "/{}/AbacusSummit_base_c000_ph" + phase + "/"
-	shells_path = "/LightCone/AbacusSummit_base_c000_ph{}/".format(phase)
-	path_instance = Paths_LC(config_file, args, in_part_path, input_name, shells_path, output_name)
+	out_part_path = "/LightCone/" + f"/{in_fol_temp}{phase}/"
+	output_name = galtype + "_snap{snapshot}_ph" + phase + "_shell_{shellnum}.hdf5"
 
-	lc_instance.generate_shells(path_instance, cutsky=False, nproc=20, Nsubboxes=64)
+	path_instance = Paths(config_file, args, in_part_path, input_name, out_part_path, output_name)
 
-	# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=2, todo=0)
-	# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
+	lightcone_instance.generate_shells(path_instance, cutsky=False, nproc=20, n_subboxes=64, cat_seed=i)
 
-	foot_nz_instance.shell(path_instance, nproc=64, todo=3)
+	# survey_geometry_instance.shell(path_instance, nproc=64, todo=3)
 
-	out_fits = path_instance.dir_out + f"/LightCone/fits/{galtype}_LC_AbacusSummit_base_c000_ph{phase}.fits"
-	convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=foot_nz_instance.boxL)
+	# out_fits = path_instance.dir_out + f"/LightCone/fits/{galtype}_LC_AbacusSummit_base_c000_ph{phase}.fits"
+	# convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=survey_geometry_instance.boxL)
 
 
-def cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELGlowDens", redshift="z1.100", snapshot=16):
-
+def cutsky_ABACUS(args, galtype=None, gal_in_name=None, redshift=None, snapshot=None):
 	in_fol_temp = "AbacusSummit_base_c000_ph"
-
 	config_file = f"./ABACUS/config/config_ABACUS_{galtype}.ini"
 
 	######### Instances
-	# lc_instance = LC(config_file, args)
-	foot_nz_instance = FOOT_NZ(config_file, args, galtype=galtype)
-
-	# ######### CutSky
-	for i in range(0, 25):
-		phase = str(int(i)).zfill(3)
-		input_name = gal_in_name + "_snap{}_ph" + phase + ".gcat.sub{}.fits"
-		output_name = gal_in_name + "_snap{}_ph" + phase + ".gcat.sub{}"
-
-		shells_path = f"/{redshift}/{in_fol_temp}{phase}/"
-		in_part_path = f"/{redshift}/{in_fol_temp}{phase}/"
-		path_instance = Paths_LC(config_file, args, in_part_path, input_name, shells_path, output_name)
-
-		# lc_instance.generate_shells(path_instance, snapshot=snapshot, cutsky=True, nproc=20, Nsubboxes=64)
-
-		# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=2, todo=2)
-		# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
-		foot_nz_instance.shell(path_instance, nproc=64, todo=3)
-		
-		out_fits = path_instance.dir_out + f"/{redshift}/fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
-		convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=foot_nz_instance.boxL)
-
-
-def cutsky_ic_ABACUS(args, galtype="ELG", redshift="ic", snapshot=576):
-
-	in_fol_temp = "AbacusSummit_base_c000_ph"
-
-	config_file = f"./ABACUS/config/config_ABACUS_ic_{galtype}.ini"
-
-	######### Instances
-	# lc_instance = LC(config_file, args)
-	foot_nz_instance = FOOT_NZ(config_file, args, galtype=galtype)
+	lightcone_instance = LightCone(config_file, args)
+	survey_geometry_instance = SurveyGeometry(config_file, args, galtype=galtype)
 
 	# ######### CutSky
 	for i in range(0, 1):
 		phase = str(int(i)).zfill(3)
-		input_name = "subbox/ic_dens_{}_SB{}.fits"
-		output_name = "ic_dens_{}_SB{}"
 
-		shells_path = f"/{in_fol_temp}{phase}/"
-		in_part_path = f"/{in_fol_temp}{phase}/"
-		path_instance = Paths_LC(config_file, args, in_part_path, input_name, shells_path, output_name)
+		in_part_path = "{redshift}/" + f"/{in_fol_temp}{phase}/"
+		input_name = gal_in_name + "_snap{snapshot}_ph" + phase + ".gcat.sub{subbox}.fits"
 
-		# lc_instance.generate_shells(path_instance, snapshot=snapshot, cutsky=True, nproc=20, Nsubboxes=64)
+		out_part_path = f"/{redshift}/{in_fol_temp}{phase}/"		
+		output_name = gal_in_name + "_snap{snapshot}_ph" + phase + "_shell_{shellnum}.hdf5"
 
-		foot_nz_instance.shell(path_instance, i, nproc=20, todo=3)
+		path_instance = Paths(config_file, args, in_part_path, input_name, out_part_path, output_name)
+
+		lightcone_instance.generate_shells(path_instance, snapshot=snapshot, redshift=redshift, cutsky=True, nproc=20, n_subboxes=64, cat_seed=i)
+
+		survey_geometry_instance.shell(path_instance, nproc=64, todo=3)
 		
-		out_fits = path_instance.dir_out + f"/fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
-		convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=foot_nz_instance.boxL)
+		# out_fits = path_instance.dir_out + f"/{redshift}/fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
+		# convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=survey_geometry_instance.boxL)
 
 
-def random_ABACUS(args, galtype="LRG", snapshot=20, gal_in_name="LRG"):
-	print(galtype)
-	config_file = f"./ABACUS/config/config_ABACUS_ran_{galtype}.ini"
-	######### Instances
-	# lc_instance = LC(config_file, args)
-	foot_nz_instance = FOOT_NZ(config_file, args, galtype=galtype)
 
-	######### random 10x
-	for i in range(1, 11):
-		seed = str(i * 100)
-		input_name = gal_in_name + "_snap{}_SB{}_S"+ seed +"_ph000.fits"
-		output_name = gal_in_name + "_snap{}_SB{}_S"+ seed +"_ph000"
-
-		in_part_path = "/ran_box/"
-		shells_path = f"/{galtype}_ran_S{seed}_shells_ph000/"
-		path_instance = Paths_LC(config_file, args, in_part_path, input_name, shells_path, output_name)
-
-		# lc_instance.generate_shells(path_instance, snapshot=snapshot, cutsky=True, nproc=20, Nsubboxes=64)
-
-		# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=2, todo=2)
-		# foot_nz_instance.shell(path_instance, nproc=64, fullfootprint=0, todo=0)
-		foot_nz_instance.shell(path_instance, nproc=64, todo=3)
-
-		out_fits = path_instance.dir_out + f"/fits/{galtype}_ran_S{seed}_shells_ph000_RANDOM_1X.fits"
-		convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=foot_nz_instance.boxL)
-
-
-def random_ABACUS_test(args, galtype="LRG", snapshot=20, gal_in_name="LRG"):
-	print(galtype)
-	config_file = f"./ABACUS/config/config_ABACUS_ran_{galtype}_test.ini"
-	######### Instances
-	lc_instance = LC(config_file, args)
-	foot_nz_instance = FOOT_NZ(config_file, args, galtype=galtype)
-
-	######### random 10x
-	i = 10000
-	seed = str(i * 100)
-	input_name = gal_in_name + "_snap{}_SB{}_S"+ seed +"_ph000.fits"
-	output_name = gal_in_name + "_snap{}_SB{}_S"+ seed +"_ph000"
-
-	in_part_path = "/box/"
-	shells_path = f"/{galtype}_ran_S{seed}_shells_ph000_rot_Y5_knl/"
-	path_instance = Paths_LC(config_file, args, in_part_path, input_name, shells_path, output_name)
-
-	lc_instance.generate_shells(path_instance, snapshot=snapshot, cutsky=True, nproc=16, Nsubboxes=216)
-
-	foot_nz_instance.shell(path_instance, i * 100, nproc=64, todo=3)
-
-	out_fits = path_instance.dir_out + "/fits/" + galtype + "_ran_S{}_shells_ph000_RANDOM_1X_rot_Y5_knl"
-	convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=foot_nz_instance.boxL, seed=i * 100, max_seed=i * 100)
-
-
-def cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B2000G512Z1.4N1014636_b0.053d1.13r0c0.6_seed"):
-	config_file = f"./EZmock/config/config_EZmock_{galtype}_6Gpc.ini"
+def cutsky_EZmock(args, galtype=None, redshift=None, in_fol_temp=None):
+	# config_file = f"./EZmock/config/config_EZmock_{galtype}_6Gpc_template.ini"
+	config_file = f"./EZmock/config/config_EZmock_{galtype}.ini"
 
 	######### Instances
-	lc_instance = LC(config_file, args)
-	foot_nz_instance = FOOT_NZ(config_file, args, galtype=galtype)
+	lightcone_instance = LightCone(config_file, args)
+	survey_geometry_instance = SurveyGeometry(config_file, args, galtype=galtype)
 
-	
 	init_phase = args.phase
-	final_phase = init_phase + 5
-	
+	final_phase = init_phase + 1
+
 	for i in range(init_phase, final_phase, 1):
 		phase = str(int(i))
-		input_name = "{}seed" + phase + ".sub{}.fits.gz"
-		output_name = "{}seed" + phase + ".sub{}"
 		
-		in_part_path = f"/{redshift}/{in_fol_temp}{phase}/"
-		shells_path = f"/{redshift}/{in_fol_temp}{phase}/"
-		path_instance = Paths_LC(config_file, args, in_part_path, input_name, shells_path, output_name)
+		in_part_path = "{redshift}/" + f"/{in_fol_temp}{phase}/"
+		input_name = "{snapshot}seed" + phase + ".sub{subbox}.fits.gz"
 
-		lc_instance.generate_shells(path_instance, snapshot="", cutsky=True, nproc=16, Nsubboxes=216)
+		out_part_path = f"/{redshift}/{in_fol_temp}{phase}/"
+		output_name = "{snapshot}seed_" + phase + "_shell_{shellnum}.hdf5"
+		
+		path_instance = Paths(config_file, args, in_part_path, input_name, out_part_path, output_name)
 
-		foot_nz_instance.shell(path_instance, i, nproc=64, todo=3)
+		# lightcone_instance.generate_shells(path_instance, snapshot="", redshift=redshift, cutsky=True, nproc=16, n_subboxes=216, cat_seed=i)
+		lightcone_instance.generate_shells(path_instance, snapshot="", redshift=redshift, cutsky=True, nproc=16, n_subboxes=64, cat_seed=i)
 
-		out_fits = path_instance.dir_out + redshift + "/fits/cutsky_" + galtype + "_" + redshift + "_" + in_fol_temp + "{}"
-		convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=foot_nz_instance.boxL, seed=i, max_seed=2000)
+		# survey_geometry_instance.shell(path_instance, nproc=64, todo=3)
 
-def random_EZmock(args, galtype="QSO", in_fol_temp="EZmock_B2000G512Z1.4N1014636_b0.053d1.13r0c0.6_seed"):
-	config_file = f"./EZmock/config/config_EZmock_{galtype}_6Gpc.ini"
+		# out_fits = path_instance.dir_out + redshift + "/fits/cutsky_" + galtype + "_" + redshift + "_" + in_fol_temp + "{}"
+		# convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=survey_geometry_instance.boxL, seed=i, max_seed=2000)
+
+
+def random_EZmock(args, galtype=None, in_fol_temp=None):
+	config_file = f"./EZmock/config/config_EZmock_{galtype}_6Gpc_template.ini"
 
 	######### Instances
-	lc_instance = LC(config_file, args)
-	foot_nz_instance = FOOT_NZ(config_file, args, galtype=galtype)
+	lightcone_instance = LightCone(config_file, args)
+	survey_geometry_instance = SurveyGeometry(config_file, args, galtype=galtype)
 
 	init_phase = args.phase
 	final_phase = init_phase + 1
@@ -192,88 +112,74 @@ def random_EZmock(args, galtype="QSO", in_fol_temp="EZmock_B2000G512Z1.4N1014636
 	for i in range(init_phase, final_phase, 1):
 		phase = str(int(i * 100))
 		print(phase, 5000 - i * 100 + 100)
-		input_name = galtype + "{}_SB{}_S" + phase + ".fits"
-		output_name = galtype + "{}_SB{}_S" + phase
-		
-		in_part_path = f"/{in_fol_temp}{phase}/"
-		shells_path = f"/{in_fol_temp}{phase}/"
-		path_instance = Paths_LC(config_file, args, in_part_path, input_name, shells_path, output_name)
 
-		lc_instance.generate_shells(path_instance, snapshot="", cutsky=True, nproc=16, Nsubboxes=216)
+		in_part_path = "{redshift}" + f"/{in_fol_temp}{phase}/"
+		input_name = galtype + "{snapshot}_SB{subbox}_S" + phase + ".fits"
 
-		foot_nz_instance.shell(path_instance, i, nproc=64, todo=3)
+		out_part_path = f"/{in_fol_temp}{phase}/"		
+		output_name = galtype + "{snapshot}_S" + phase + "_shell_{shellnum}.hdf5"
 
-		out_fits = path_instance.dir_out + "/fits/cutsky_" + galtype + "_" + in_fol_temp + "{}"
-		convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=foot_nz_instance.boxL, seed=i * 100, max_seed=5000)
+		path_instance = Paths(config_file, args, in_part_path, input_name, out_part_path, output_name)
+
+		lightcone_instance.generate_shells(path_instance, snapshot="", redshift="", cutsky=True, nproc=16, n_subboxes=216, cat_seed=i * 100)
+
+		# survey_geometry_instance.shell(path_instance, i, nproc=64, todo=3)
+
+		# out_fits = path_instance.dir_out + "/fits/cutsky_" + galtype + "_" + in_fol_temp + "{}"
+		# convert(inpath=path_instance.shells_out_path, out_file=out_fits, galtype=galtype, boxL=survey_geometry_instance.boxL, seed=i * 100, max_seed=5000)
 
 
 def main():
 	parser = argparse.ArgumentParser()
 	# parser.add_argument("config", help="ini file holding configuration", type=str)
 	parser.add_argument("--dir_out", type=str, help="output directory (overrides config file)")
-	parser.add_argument("--dir_gcat", type=str, help="input directory (same)")
+	parser.add_argument("--dir_in", type=str, help="input directory (same)")
 	parser.add_argument("--input_name", type=str, help="name of input catalogs (same)")
 	parser.add_argument("--galaxy", type=str, help="LRG QSO ELG")
 	parser.add_argument("--phase", type=int, help="phase of the catalog")
 	parser.add_argument("--ngc_sgc", type=str, help="NGC or SGC preferred rotation")
+	parser.add_argument("--mock_random_ic", type=str, help="mock, random or IC")
 
 	args = parser.parse_args()
 
 	# import time
 	# start = time.time()
-	
+
+	### EZmocks 6Gpc (Tested)
 	# cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B6000G1536Z0.8N216424548_b0.385d4r169c0.3_seed")
+	# cutsky_EZmock(args, galtype="ELG", redshift="z1.100", in_fol_temp="EZmock_B6000G1536Z1.1N648012690_b0.345d1.45r40c0.05_seed")
+	# cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B6000G1536Z1.4N27395172_b0.053d1.13r0c0.6_seed")
 
-	# end = time.time()
-	# print(f"################## FINISHED in {end-start}")
+	### Random 6Gpc (Tested)
+	# random_EZmock(args, galtype="LRG", in_fol_temp="S")
+	# random_EZmock(args, galtype="ELG", in_fol_temp="S")
+	# random_EZmock(args, galtype="QSO", in_fol_temp="S")
 
-	# random_ABACUS_test(args, galtype="LRG", snapshot=20, gal_in_name="LRG")
-
-	
-	# config_file = str(args.config) # config file
+	### EZmocks 2Gpc (Tested)
 	# cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B2000G512Z0.8N8015724_b0.385d4r169c0.3_seed")
-
-	import time
-	start = time.time()
+	# cutsky_EZmock(args, galtype="ELG", redshift="z1.100", in_fol_temp="EZmock_B2000G512Z1.1N24000470_b0.345d1.45r40c0.05_seed")
+	# cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B2000G512Z1.4N1014636_b0.053d1.13r0c0.6_seed")
 	
-	if args.galaxy == "QSO":
-		cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B2000G512Z1.4N1014636_b0.053d1.13r0c0.6_seed")
-		# cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B6000G1536Z1.4N27395172_b0.053d1.13r0c0.6_seed")
-		# random_EZmock(args, galtype="QSO", in_fol_temp="S")
-	elif args.galaxy == "LRG":
-		# cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B2000G512Z0.8N8015724_b0.385d4r169c0.3_seed")
-		# cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B6000G1536Z0.8N216424548_b0.385d4r169c0.3_seed")
-		cutsky_ic_ABACUS(args, galtype="LRG", redshift="ic", snapshot=576)
-		# random_EZmock(args, galtype="LRG", in_fol_temp="S")
 
-	elif args.galaxy == "ELG":
-		# cutsky_EZmock(args, galtype="ELG", redshift="z1.100", in_fol_temp="EZmock_B2000G512Z1.1N24000470_b0.345d1.45r40c0.05_seed")
-		cutsky_EZmock(args, galtype="ELG", redshift="z1.100", in_fol_temp="EZmock_B6000G1536Z1.1N648012690_b0.345d1.45r40c0.05_seed")
-		# random_EZmock(args, galtype="ELG", in_fol_temp="S")
-
-	else:
-		print("ERROR: Choose between LRG QSO ELG")
-		exit()
-
-	end = time.time()
-	print(f"################## FINISHED in {end-start}")
-
-	
-	# cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELGlowDens", redshift="z1.100", snapshot=16)
+	### Abacus 2Gpc (Tested)
 	# cutsky_ABACUS(args, galtype="LRG", gal_in_name="LRG", redshift="z0.800", snapshot=20)
+	# cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELGlowDens", redshift="z1.100", snapshot=16)
 	# cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO", redshift="z1.400", snapshot=12)
-	
+
+	### Abacus 2Gpc (Tested)
+	LC_ABACUS(args, galtype="LRG")
+	# LC_ABACUS(args, galtype="QSO")
+
+	### Random Abacus 2Gpc (To BE Tested)
 	# random_ABACUS(args, galtype="LRG", snapshot=20, gal_in_name="LRG")
 	# random_ABACUS(args, galtype="QSO", snapshot=12, gal_in_name="QSO")
 	# random_ABACUS(args, galtype="ELG", snapshot=16, gal_in_name="ELGlowDens")
+	
+	### IC Abacus 2Gpc (To BE Tested)
+	# cutsky_ic_ABACUS(args, galtype="LRG", redshift="ic", snapshot=576)
 
-	# if args.galaxy == "QSO":
-	# 	LC_ABACUS(args, galtype="QSO")
-	# elif args.galaxy == "LRG":
-	# 	LC_ABACUS(args, galtype="LRG")
-	# else:
-	# 	print("ERROR: Choose between LRG QSO")
-	# 	exit()
+	# end = time.time()
+	# print(f"################## FINISHED in {end-start}")
 
 	
 if __name__ == '__main__':
