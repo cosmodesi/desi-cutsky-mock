@@ -8,7 +8,7 @@ import argparse
 from generate_lc import LightCone, Paths
 from foot_nz import SurveyGeometry
 
-from combine_shells_fits import convert
+from combine_shells_fits import stack_shells
 
 
 def LC_ABACUS(args, galtype=None):
@@ -36,7 +36,7 @@ def LC_ABACUS(args, galtype=None):
 	# survey_geometry_instance.shell_series(path_instance, todo=3)
 
 	out_fits = path_instance.dir_out + f"/LightCone/{galtype}_LC_AbacusSummit_base_c000_ph{phase}.fits"
-	convert(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT")
+	stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT")
 
 
 def cutsky_ABACUS(args, galtype=None, gal_in_name=None, redshift=None, snapshot=None):
@@ -64,7 +64,7 @@ def cutsky_ABACUS(args, galtype=None, gal_in_name=None, redshift=None, snapshot=
 		survey_geometry_instance.shell(path_instance, nproc=64, todo=3)
 		
 		out_fits = path_instance.dir_out + f"/{redshift}/fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
-		convert(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
+		stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
 
 
 def cutsky_EZmock(args, galtype=None, redshift=None, in_fol_temp=None):
@@ -95,8 +95,8 @@ def cutsky_EZmock(args, galtype=None, redshift=None, in_fol_temp=None):
 		# survey_geometry_instance.shell(path_instance, nproc=64, todo=3)
 
 		# out_fits = path_instance.dir_out + redshift + "/fits/cutsky_" + galtype + "_" + redshift + "_" + in_fol_temp + "{}"
-		# convert(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="NGC_SGC", seed=i, max_seed=2000)
-		# convert(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
+		# stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="NGC_SGC", seed=i, max_seed=2000)
+		# stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
 
 
 
@@ -129,7 +129,7 @@ def random_EZmock(args, galtype=None, in_fol_temp=None):
 
 		# out_fits = path_instance.dir_out + "/fits/cutsky_" + galtype + "_" + in_fol_temp + "{}"
 
-		# convert(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="NGC_SGC", seed=i * 100, max_seed=5000)
+		# stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="NGC_SGC", seed=i * 100, max_seed=5000)
 
 
 def main():

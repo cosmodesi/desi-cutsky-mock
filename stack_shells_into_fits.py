@@ -72,7 +72,7 @@ def fill_array(output_data_array, input_data_array, columns, idx, index_i, n_mea
     return index_f
 
 
-def convert(survey_geometry_instance, inpath="test", out_file="test", seed=0, max_seed=0, mock_random_ic=None, ngc_sgc_tot=None):
+def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=0, max_seed=0, mock_random_ic=None, ngc_sgc_tot=None):
     files = glob.glob(inpath + "/*hdf5")
     print("INFO: The number of shells: ", len(files))
 
