@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 
 # Generate lightcone for DESI mocks
@@ -25,57 +26,9 @@ def bits(ask="try"):
 	if ask == "downsample_main": return 8 #(1 0 0 0)
 	sys.exit()
 
+
 def mask(main=0, nz=0, Y5=0, sv3=0):
 	return nz * (2**0) + Y5 * (2**1) + sv3 * (2**2) + main * (2**3)
-
-def get_nz(zz, config, ask=None):
-	''' The function where the n(z) is read
-	and the NZ column is computed for the given
-	redshifts.
-	'''
-
-	z, nz = np.loadtxt(config["nz"][ask], usecols=(config["nz"]["col_z"], config["nz"]["col_z"]), unpack=True)
-
-	z_n = z
-	nz_n = (nz / ( 1 - config.getfloat('failurerate', ask) )) * 1.0
-
-	np.savetxt(config["nz"][ask + "_red_cor"], np.array([z_n, nz_n]).T)
-
-	return np.interp(zz, z_n, nz_n, left=0, right=0)
-
-
-def downsample_aux(z_cosmo, ran, n_mean, config, ask=None):
-	""" downsample galaxies following n(z) model specified in galtype"""
-
-	nz = get_nz(z_cosmo, config, ask=ask)
-
-	# downsample
-	nz_selected = ran < nz / n_mean
-	idx         = np.where(nz_selected)
-	print("DOWNSAMPLE: Selected {} out of {} galaxies.".format(len(idx[0]), len(z_cosmo)), flush=True)
-
-	bitval = bits(ask=ask)
-
-	newbits = np.zeros(len(z_cosmo), dtype=np.int32)
-	newbits[idx] = bitval
-
-	return newbits
-
-
-def downsample(galtype, n_mean, z_cosmo, config):
-	""" downsample galaxies following n(z) model specified in galtype"""
-
-	ran     = np.random.rand(len(z_cosmo))
-
-	newbits = downsample_aux(z_cosmo, ran, n_mean, config, ask="downsample")
-
-	if galtype == "LRG":
-		newbits_main = downsample_aux(z_cosmo, ran, n_mean, config, ask="downsample_main")
-		outbits = np.bitwise_or(newbits, newbits_main)
-
-		return outbits, ran
-
-	return newbits, ran
 
 
 def apply_footprint(ra, dec, footprint_mask):
@@ -107,54 +60,13 @@ def apply_footprint(ra, dec, footprint_mask):
 	return newbits
 
 
-def generate_shell(args):
-	file_, galtype, tracer_id, footprint_mask, todo, config = args
-	print(f"INFO: Read {file_}")
-
-	f = h5py.File(file_, 'r+')
-	n_mean = f.attrs["NGAL"] / (f.attrs["BOX_LENGTH"]**3)
-
-	shellnum = f.attrs["SHELLNUM"]
-	cat_seed = f.attrs["CAT_SEED"]
-
-	unique_seed = tracer_id * 500500 + 250 * cat_seed + shellnum
-	print("INFO: UNIQUE SEED:", unique_seed, flush=True)
-	np.random.seed(unique_seed)
-
-	data = f['galaxy']
-	ra = data['RA'][()]
-	dec = data['DEC'][()]
-	z_cosmo = data['Z_COSMO'][()]
-
-	foot_bit0 = apply_footprint(ra, dec, 0)
-	foot_bit2 = apply_footprint(ra, dec, 2)
-	foot_bit = np.bitwise_or(foot_bit0, foot_bit2)
-
-	down_bit, ran_arr = downsample(galtype, n_mean, z_cosmo, config)
-
-	out_arr = np.bitwise_or(foot_bit, down_bit)
-	out_arr = out_arr.astype(np.int32)
-
-	if "STATUS" in data.keys():
-		print("WARNING: STATUS EXISTS. New STATUS has not been written.")
-	else:
-		f.create_dataset('galaxy/STATUS', data=out_arr,  dtype=np.int32)
-
-	if "RAN_NUM_0_1" in data.keys():
-		print("WARNING: RAN_NUM_0_1 EXISTS. New RAN_NUM_0_1 has not been written.")
-	else:
-		f.create_dataset('galaxy/RAN_NUM_0_1', data=ran_arr, dtype=np.float32)
-
-	f.close()
-
-
 class SurveyGeometry():
 	def __init__(self, config_file, args, galtype=None):
 		config     = configparser.ConfigParser()
 		config.read(config_file)
 		self.config = config
 
-		self.box_length       =  config.getint('sim', 'box_length')
+		self.box_length =  config.getint('sim', 'box_length')
 		self.zmin       =  config.getfloat('sim', 'zmin')
 		self.zmax       =  config.getfloat('sim', 'zmax')
 
@@ -171,11 +83,100 @@ class SurveyGeometry():
 
 		print(f"INFO: {self.galtype} with {self.tracer_id} ID")
 
+
+	def get_nz(self, z_cat, ask=None):
+		''' The function where the n(z) is read
+		and the NZ column is computed for the given
+		redshifts.
+		'''
+		config = self.config
+		z, nz = np.loadtxt(config["nz"][ask], usecols=(config.getint("nz", "col_z"), config.getint("nz", "col_z")), unpack=True)
+
+		z_n = z
+		nz_n = (nz / ( 1 - config.getfloat('failurerate', ask) )) * 1.0
+
+		np.savetxt(config["nz"][ask + "_red_cor"], np.array([z_n, nz_n]).T)
+
+		return np.interp(z_cat, z_n, nz_n, left=0, right=0)
+
+
+	def downsample_aux(self, z_cat, ran, n_mean, ask=None):
+		""" downsample galaxies following n(z) model specified in galtype"""
+
+		nz = self.get_nz(z_cat, ask=ask)
+
+		# downsample
+		nz_selected = ran < nz / n_mean
+		idx         = np.where(nz_selected)
+		print("DOWNSAMPLE: Selected {} out of {} galaxies.".format(len(idx[0]), len(z_cat)), flush=True)
+
+		bitval = bits(ask=ask)
+
+		newbits = np.zeros(len(z_cat), dtype=np.int32)
+		newbits[idx] = bitval
+
+		return newbits
+		
+	def downsample(self, z_cat, n_mean):
+		""" downsample galaxies following n(z) model specified in galtype"""
+
+		ran     = np.random.rand(len(z_cat))
+
+		newbits = self.downsample_aux(z_cat, ran, n_mean, ask="downsample")
+
+		if self.galtype == "LRG":
+			newbits_main = self.downsample_aux(z_cat, ran, n_mean, ask="downsample_main")
+			outbits = np.bitwise_or(newbits, newbits_main)
+
+			return outbits, ran
+
+		return newbits, ran
+
+	def generate_shell(self, args):
+		infile, footprint_mask, todo = args
+		print(f"INFO: Read {infile}")
+
+		f = h5py.File(infile, 'r+')
+		n_mean = f.attrs["NGAL"] / (f.attrs["BOX_LENGTH"]**3)
+
+		shellnum = f.attrs["SHELLNUM"]
+		cat_seed = f.attrs["CAT_SEED"]
+
+		unique_seed = self.tracer_id * 500500 + 250 * cat_seed + shellnum
+		print("INFO: UNIQUE SEED:", unique_seed, flush=True)
+		np.random.seed(unique_seed)
+
+		data = f['galaxy']
+		ra = data['RA'][()]
+		dec = data['DEC'][()]
+		z_cosmo = data['Z_COSMO'][()]
+
+		foot_bit0 = apply_footprint(ra, dec, 0)
+		foot_bit2 = apply_footprint(ra, dec, 2)
+		foot_bit = np.bitwise_or(foot_bit0, foot_bit2)
+
+		down_bit, ran_arr = self.downsample(z_cosmo, n_mean)
+
+		out_arr = np.bitwise_or(foot_bit, down_bit)
+		out_arr = out_arr.astype(np.int32)
+
+		if "STATUS" in data.keys():
+			print("WARNING: STATUS EXISTS. New STATUS has not been written.")
+		else:
+			f.create_dataset('galaxy/STATUS', data=out_arr,  dtype=np.int32)
+
+		if "RAN_NUM_0_1" in data.keys():
+			print("WARNING: RAN_NUM_0_1 EXISTS. New RAN_NUM_0_1 has not been written.")
+		else:
+			f.create_dataset('galaxy/RAN_NUM_0_1', data=ran_arr, dtype=np.float32)
+
+		f.close()
+
 	def shell(self, path_instance, nproc=5, footprint_mask=0, todo=1):
 
-		infiles = glob.glob(path_instance.shells_out_path + "/*.h5py")
+		infiles = glob.glob(path_instance.shells_out_path + "/*.hdf5")
 
-		args = product(infiles, [self.galtype], [self.tracer_id], [footprint_mask], [todo], [self.config])
+		args = product(infiles, [footprint_mask], [todo])
 
 		if nproc > len(infiles):
 			nproc = len(infiles)
@@ -188,7 +189,7 @@ class SurveyGeometry():
 
 	def shell_series(self, path_instance, footprint_mask=0, todo=1):
 
-		infiles = glob.glob(path_instance.shells_out_path + "/*.h5py")
+		infiles = glob.glob(path_instance.shells_out_path + "/*.hdf5")
 
 		for file_ in infiles:
 			args = [file_, self.galtype, self.tracer_id, footprint_mask, todo, self.config]

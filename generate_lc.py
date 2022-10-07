@@ -360,7 +360,7 @@ class LightCone():
 				elif self.mock_random_ic == "random":
 					out_file.create_dataset('galaxy/ID',      data=aux0_array, dtype=np.int32)
 				elif self.mock_random_ic == "ic":
-					out_file.create_dataset('galaxy/DENSITY', data=aux0_array, dtype=np.float32)
+					out_file.create_dataset('galaxy/ONEplusDELTA', data=1 + aux0_array, dtype=np.float32)
 
 				out_file.attrs['NGAL']     = counter_ngal
 				out_file.attrs['SHELLNUM'] = shellnum

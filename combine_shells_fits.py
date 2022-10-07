@@ -1,94 +1,162 @@
+import os
 import glob
 import numpy as np
 import h5py
 import fitsio
-import os
 
-from foot_nz import get_nz, mask
+from foot_nz import mask
 from redshift_error_QSO import sample_redshift_error
 
-def convert(inpath="test", out_file="test", galtype=None, boxL=2000, seed=0, max_seed=0):
-    files = glob.glob(inpath + "/*h5py")
+
+def count_aux(status_tmp, ra_tmp):
+    idx = np.arange(len(status_tmp))
+    mask_Y5 = mask(main=0, nz=0, Y5=0, sv3=0)
+        
+    range_NGC = (ra_tmp < 303.25) & (ra_tmp > 84)
+    range_SGC = ~range_NGC
+
+    idx_Y5_TOT = idx[ ((status_tmp & (mask_Y5)) == mask_Y5) ]
+    idx_Y5_NGC = idx[ ((status_tmp & (mask_Y5)) == mask_Y5) & range_NGC ]
+    idx_Y5_SGC = idx[ ((status_tmp & (mask_Y5)) == mask_Y5) & range_SGC ]
+
+    return idx_Y5_TOT, idx_Y5_NGC, idx_Y5_SGC
+
+
+def count(files):
     print(len(files))
-    counter = 0
+
+    counter_TOT = 0
+    counter_NGC = 0
+    counter_SGC = 0
+
     for i, file_ in enumerate(files):
         f = h5py.File(file_, 'r')
         data = f['galaxy']
         ra_tmp      = data['RA'][()]
         status_tmp  = data['STATUS'][()]
 
-        idx = np.arange(len(status_tmp))
-        mask_Y5 = mask(main=0, nz=0, Y5=1, sv3=0)
-        idx_Y5 = idx[(status_tmp & (mask_Y5))==mask_Y5]
+        idx_Y5_TOT, idx_Y5_NGC, idx_Y5_SGC = count_aux(status_tmp, ra_tmp)
+        counter_NGC = counter_NGC + len(status_tmp[idx_Y5_NGC])
+        counter_SGC = counter_SGC + len(status_tmp[idx_Y5_SGC])
+        counter_TOT = counter_TOT + len(status_tmp[idx_Y5_TOT])
 
-
-        if len(ra_tmp[idx_Y5]) == 0:
-            continue
-        counter = counter + len(ra_tmp[idx_Y5])
         f.close()
-    
-    if galtype == "LRG":
-        data_fits = np.zeros(counter, dtype=[('RA', 'f4'), ('DEC', 'f4'), ('Z', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('NZ', 'f4'), ('NZ_MAIN', 'f4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'), ('ID', 'i4')])
-    elif galtype == "QSO":
-        data_fits = np.zeros(counter, dtype=[('RA', 'f4'), ('DEC', 'f4'), ('Z', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('NZ', 'f4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'), ('Z_ERR_3GAUSS', 'f4'), ('Z_ERR_SIG500', 'f4')])
-    else:
-        data_fits = np.zeros(counter, dtype=[('RA', 'f4'), ('DEC', 'f4'), ('Z', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('NZ', 'f4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4')])
+    return counter_TOT, counter_NGC, counter_SGC
 
-    index_i = 0
-    index_f = 0
+
+def fill_array(output_data_array, input_data_array, columns, idx, index_i, n_mean, survey_geometry_instance):
+    z_cosmo_tmp = input_data_array["Z_COSMO"][()]
+    z_rsd_tmp   = input_data_array["Z_RSD"][()]
+    size_ = len(z_cosmo_tmp[idx])
+
+    index_f = size_ + index_i
+
+    for col, type_ in columns:
+        if col == "NZ":
+            output_data_array["NZ"][index_i: index_f]      = survey_geometry_instance.get_nz(z_cosmo_tmp[idx], ask="downsample")
+        elif col == "NZ_MAIN":
+            output_data_array["NZ_MAIN"][index_i: index_f] = survey_geometry_instance.get_nz(z_cosmo_tmp[idx], ask="downsample_main")
+        elif col == "RAW_NZ":
+            output_data_array["RAW_NZ"][index_i: index_f] = np.ones(len(z_cosmo_tmp[idx])) * n_mean
+        elif col == "Z_ERR_3GAUSS":
+            output_data_array["Z_ERR_3GAUSS"][index_i: index_f] = sample_redshift_error(z_rsd_tmp[idx], error_model='3gauss')
+        elif col == "Z_ERR_SIG500":
+            output_data_array["Z_ERR_SIG500"][index_i: index_f] = sample_redshift_error(z_rsd_tmp[idx], error_model='sig500')
+        elif col == "Z":
+            output_data_array["Z"][index_i: index_f] = z_rsd_tmp[idx]
+        else:
+            array_col = input_data_array[col][()]
+            output_data_array[col][index_i: index_f] = array_col[idx]
+
+
+    return index_f
+
+
+def convert(survey_geometry_instance, inpath="test", out_file="test", seed=0, max_seed=0, mock_random_ic=None, ngc_sgc_tot=None):
+    files = glob.glob(inpath + "/*hdf5")
+    print("INFO: The number of shells: ", len(files))
+
+    counter_TOT, counter_NGC, counter_SGC = count(files)
+    print(f"The number of tracers: TOT={counter_TOT}; NGC={counter_NGC}; SGC={counter_SGC}")
+
+    general_columns = [('RA', 'f4'), ('DEC', 'f4'), ('Z', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('NZ', 'f4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4')]
+
+    if mock_random_ic == "mock":
+        add_columns = []
+    elif mock_random_ic == "random":
+        add_columns = [('ID', 'i4')]
+    elif mock_random_ic == "ic":
+        add_columns = [('ONEplusDELTA', 'f4')]
+
+    if survey_geometry_instance.galtype == "LRG":
+        specific_columns = [('NZ_MAIN', 'f4')]
+    elif survey_geometry_instance.galtype == "QSO":
+        specific_columns =  [('Z_ERR_3GAUSS', 'f4'), ('Z_ERR_SIG500', 'f4')]
+    else:
+        specific_columns = []    
+
+    all_columns = general_columns + add_columns + specific_columns
     
+    if ngc_sgc_tot == "TOT":
+        data_fits_TOT = np.zeros(counter_TOT, dtype=all_columns)
+        index_i_TOT = 0
+
+    elif ngc_sgc_tot == "NGC_SGC":
+        data_fits_NGC = np.zeros(counter_NGC, dtype=all_columns)
+        index_i_NGC = 0
+        
+        data_fits_SGC = np.zeros(counter_SGC, dtype=all_columns)
+        index_i_SGC = 0
+    else:
+        print("ERROR: Choose NGC_SGC or TOT for ngc_sgc_tot variable")
+
     for i, file_ in enumerate(files):
-        print(f"{i}/{len(files)}")
+        print(f"File {i + 1}/{len(files)}")
         f = h5py.File(file_, 'r')
         data = f['galaxy']
         ngalbox    = f.attrs["NGAL"]
-        n_mean = ngalbox/(boxL**3)
-
+        n_mean = ngalbox / (survey_geometry_instance.box_length ** 3)
         ra_tmp      = data['RA'][()]
-        dec_tmp     = data['DEC'][()]
-        z_rsd_tmp   = data['Z_RSD'][()]
-        z_cosmo_tmp = data['Z_COSMO'][()]
         status_tmp  = data['STATUS'][()]
-        id_tmp      = data['ID'][()]
-        ran_num_0_1_tmp  = data['RAN_NUM_0_1'][()]
 
-        idx = np.arange(len(status_tmp))
-        mask_Y5 = mask(main=0, nz=0, Y5=1, sv3=0)
-        idx_Y5 = idx[(status_tmp & (mask_Y5))==mask_Y5]
+        idx_Y5_TOT, idx_Y5_NGC, idx_Y5_SGC = count_aux(status_tmp, ra_tmp)
 
-        print(len(ra_tmp), len(dec_tmp[idx_Y5]))
+        if ngc_sgc_tot == "TOT":
 
-        if len(dec_tmp[idx_Y5]) == 0:
-            continue
-        index_f = index_i + len(dec_tmp[idx_Y5])
-        data_fits["RA"][index_i: index_f]      = ra_tmp[idx_Y5]
-        data_fits["DEC"][index_i: index_f]     = dec_tmp[idx_Y5]
-        data_fits["Z"][index_i: index_f]       = z_rsd_tmp[idx_Y5]
-        data_fits["Z_COSMO"][index_i: index_f] = z_cosmo_tmp[idx_Y5]
-        data_fits["STATUS"][index_i: index_f]  = status_tmp[idx_Y5]
-        data_fits["NZ"][index_i: index_f]      = get_nz(z_cosmo_tmp[idx_Y5], galtype=galtype)
-        data_fits["ID"][index_i: index_f]      = id_tmp[idx_Y5]
-        
-        if galtype == "LRG":
-            data_fits["NZ_MAIN"][index_i: index_f]      = get_nz(z_cosmo_tmp[idx_Y5], galtype="LRG_main")
-        elif galtype == "QSO":
-            data_fits["Z_ERR_3GAUSS"][index_i: index_f] = sample_redshift_error(z_rsd_tmp[idx_Y5], error_model='3gauss')
-            data_fits["Z_ERR_SIG500"][index_i: index_f] = sample_redshift_error(z_rsd_tmp[idx_Y5], error_model='sig500')
+            index_i_TOT = fill_array(data_fits_TOT, data, all_columns, idx_Y5_TOT, index_i_TOT, n_mean, survey_geometry_instance)
 
-        data_fits["RAW_NZ"][index_i: index_f]  = np.ones(len(dec_tmp[idx_Y5])) * n_mean
-        data_fits["RAN_NUM_0_1"][index_i: index_f]  = ran_num_0_1_tmp[idx_Y5]
+        elif ngc_sgc_tot == "NGC_SGC":
+            index_i_NGC = fill_array(data_fits_NGC, data, all_columns, idx_Y5_NGC, index_i_NGC, n_mean, survey_geometry_instance)
+            index_i_SGC = fill_array(data_fits_SGC, data, all_columns, idx_Y5_SGC, index_i_SGC, n_mean, survey_geometry_instance)
 
-        index_i = index_f
 
         f.close()
 
-    print(data_fits["RA"][-1], ra_tmp[idx_Y5][-1])    
-
-    out_file = out_file.format(seed) + ".fits"
-
     hdict = {'SV3_AREA': 207.5, 'Y5_AREA':14850.4}
-    fits = fitsio.FITS(out_file+"_tmp", "rw")
-    fits.write(data_fits, header=hdict)
-    fits.close()
 
-    os.rename(out_file+"_tmp", out_file)
+    if ngc_sgc_tot == "TOT":
+        print("Check last value of RA: ", data_fits_TOT["RA"][-1], ra_tmp[idx_Y5_TOT][-1])
+
+        # out_file = out_file.format(phase=seed) + "_Y5_TOT.fits"
+
+        fits = fitsio.FITS(out_file + "_tmp", "rw")
+        fits.write(data_fits_TOT, header=hdict)
+        fits.close()
+        os.rename(out_file + "_tmp", out_file)
+
+    elif ngc_sgc_tot == "NGC_SGC":
+        print("Check last value of RA: ", data_fits_NGC["RA"][-1], ra_tmp[idx_Y5_NGC][-1])
+        print("Check last value of RA: ", data_fits_SGC["RA"][-1], ra_tmp[idx_Y5_SGC][-1])
+
+        out_file_NGC = out_file.format(phase=seed) + "Y5_NGC.fits"
+        out_file_SGC = out_file.format(phase=max_seed - seed + 1) + "Y5_SGC.fits"
+
+        fits = fitsio.FITS(out_file_NGC+"_tmp", "rw")
+        fits.write(data_fits_NGC, header=hdict)
+        fits.close()
+        os.rename(out_file_NGC+"_tmp", out_file_NGC)
+
+        fits = fitsio.FITS(out_file_SGC+"_tmp", "rw")
+        fits.write(data_fits_SGC, header=hdict)
+        fits.close()
+        os.rename(out_file_SGC+"_tmp", out_file_SGC)
