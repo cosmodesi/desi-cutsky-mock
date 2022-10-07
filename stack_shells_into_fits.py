@@ -4,7 +4,7 @@ import numpy as np
 import h5py
 import fitsio
 
-from foot_nz import mask
+from apply_survey_geometry import mask
 from redshift_error_QSO import sample_redshift_error
 
 
@@ -68,11 +68,10 @@ def fill_array(output_data_array, input_data_array, columns, idx, index_i, n_mea
             array_col = input_data_array[col][()]
             output_data_array[col][index_i: index_f] = array_col[idx]
 
-
     return index_f
 
 
-def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=0, max_seed=0, mock_random_ic=None, ngc_sgc_tot=None):
+def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=0, max_seed=0, min_seed=1, mock_random_ic=None, ngc_sgc_tot=None):
     files = glob.glob(inpath + "/*hdf5")
     print("INFO: The number of shells: ", len(files))
 
@@ -149,7 +148,7 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
         print("Check last value of RA: ", data_fits_SGC["RA"][-1], ra_tmp[idx_Y5_SGC][-1])
 
         out_file_NGC = out_file.format(phase=seed) + "Y5_NGC.fits"
-        out_file_SGC = out_file.format(phase=max_seed - seed + 1) + "Y5_SGC.fits"
+        out_file_SGC = out_file.format(phase=max_seed - seed + min_seed) + "Y5_SGC.fits"
 
         fits = fitsio.FITS(out_file_NGC+"_tmp", "rw")
         fits.write(data_fits_NGC, header=hdict)

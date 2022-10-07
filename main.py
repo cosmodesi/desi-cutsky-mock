@@ -5,10 +5,10 @@
 
 import argparse
 
-from generate_lc import LightCone, Paths
-from foot_nz import SurveyGeometry
+from generate_light_cone import LightCone, Paths
+from apply_survey_geometry import SurveyGeometry
 
-from combine_shells_fits import stack_shells
+from stack_shells_into_fits import stack_shells
 
 
 def LC_ABACUS(args, galtype=None):
@@ -67,9 +67,11 @@ def cutsky_ABACUS(args, galtype=None, gal_in_name=None, redshift=None, snapshot=
 		stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
 
 
-def cutsky_EZmock(args, galtype=None, redshift=None, in_fol_temp=None):
-	# config_file = f"./EZmock/config/config_EZmock_{galtype}_6Gpc_template.ini"
-	config_file = f"./EZmock/config/config_EZmock_{galtype}.ini"
+def cutsky_EZmock(args, galtype=None, redshift=None, in_fol_temp=None, box_size=6):
+	if box_size = 6:
+		config_file = f"./EZmock/config/config_EZmock_{galtype}_6Gpc_template.ini"
+	else:
+		config_file = f"./EZmock/config/config_EZmock_{galtype}.ini"
 
 	######### Instances
 	lightcone_instance = LightCone(config_file, args)
@@ -89,20 +91,24 @@ def cutsky_EZmock(args, galtype=None, redshift=None, in_fol_temp=None):
 		
 		path_instance = Paths(config_file, args, in_part_path, input_name, out_part_path, output_name)
 
-		# lightcone_instance.generate_shells(path_instance, snapshot="", redshift=redshift, cutsky=True, nproc=16, n_subboxes=216, cat_seed=i)
-		lightcone_instance.generate_shells(path_instance, snapshot="", redshift=redshift, cutsky=True, nproc=16, n_subboxes=64, cat_seed=i)
-
-		# survey_geometry_instance.shell(path_instance, nproc=64, todo=3)
-
-		# out_fits = path_instance.dir_out + redshift + "/fits/cutsky_" + galtype + "_" + redshift + "_" + in_fol_temp + "{}"
-		# stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="NGC_SGC", seed=i, max_seed=2000)
-		# stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
+		if box_size = 6:
+			lightcone_instance.generate_shells(path_instance, snapshot="", redshift=redshift, cutsky=True, nproc=16, n_subboxes=216, cat_seed=i)
+			survey_geometry_instance.shell(path_instance, nproc=64)
+			out_fits = path_instance.dir_out + redshift + "/fits/cutsky_" + galtype + "_" + redshift + "_" + in_fol_temp + "{}"
+			stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="NGC_SGC", seed=i, max_seed=2000)
+		
+		else:
+			lightcone_instance.generate_shells(path_instance, snapshot="", redshift=redshift, cutsky=True, nproc=16, n_subboxes=64, cat_seed=i)
+			survey_geometry_instance.shell(path_instance, nproc=64)
+			out_fits = path_instance.dir_out + redshift + "/fits/cutsky_" + galtype + "_" + redshift + "_" + in_fol_temp + f"{phase}"
+			stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
+		
 
 
 
 
 def random_EZmock(args, galtype=None, in_fol_temp=None):
-	config_file = f"./EZmock/config/config_EZmock_{galtype}_6Gpc_template.ini"
+	config_file = f"./EZmock/config/config_EZmock_{galtype}_6Gpc.ini"
 
 	######### Instances
 	lightcone_instance = LightCone(config_file, args)
@@ -124,12 +130,10 @@ def random_EZmock(args, galtype=None, in_fol_temp=None):
 		path_instance = Paths(config_file, args, in_part_path, input_name, out_part_path, output_name)
 
 		lightcone_instance.generate_shells(path_instance, snapshot="", redshift="", cutsky=True, nproc=16, n_subboxes=216, cat_seed=i * 100)
+		survey_geometry_instance.shell(path_instance, nproc=64)
 
-		# survey_geometry_instance.shell(path_instance, i, nproc=64, todo=3)
-
-		# out_fits = path_instance.dir_out + "/fits/cutsky_" + galtype + "_" + in_fol_temp + "{}"
-
-		# stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="NGC_SGC", seed=i * 100, max_seed=5000)
+		out_fits = path_instance.dir_out + "/fits/cutsky_" + galtype + "_" + in_fol_temp + "{}"
+		stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="NGC_SGC", seed=i * 100, max_seed=5000, min_seed=100)
 
 
 def main():
@@ -149,19 +153,19 @@ def main():
 	# start = time.time()
 
 	### EZmocks 6Gpc (Tested)
-	# cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B6000G1536Z0.8N216424548_b0.385d4r169c0.3_seed")
-	# cutsky_EZmock(args, galtype="ELG", redshift="z1.100", in_fol_temp="EZmock_B6000G1536Z1.1N648012690_b0.345d1.45r40c0.05_seed")
-	# cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B6000G1536Z1.4N27395172_b0.053d1.13r0c0.6_seed")
+	cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B6000G1536Z0.8N216424548_b0.385d4r169c0.3_seed", box_size=6)
+	cutsky_EZmock(args, galtype="ELG", redshift="z1.100", in_fol_temp="EZmock_B6000G1536Z1.1N648012690_b0.345d1.45r40c0.05_seed", box_size=6)
+	cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B6000G1536Z1.4N27395172_b0.053d1.13r0c0.6_seed", box_size=6)
 
 	### Random 6Gpc (Tested)
-	# random_EZmock(args, galtype="LRG", in_fol_temp="S")
-	# random_EZmock(args, galtype="ELG", in_fol_temp="S")
-	# random_EZmock(args, galtype="QSO", in_fol_temp="S")
+	random_EZmock(args, galtype="LRG", in_fol_temp="S")
+	random_EZmock(args, galtype="ELG", in_fol_temp="S")
+	random_EZmock(args, galtype="QSO", in_fol_temp="S")
 
 	### EZmocks 2Gpc (Tested)
-	# cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B2000G512Z0.8N8015724_b0.385d4r169c0.3_seed")
-	# cutsky_EZmock(args, galtype="ELG", redshift="z1.100", in_fol_temp="EZmock_B2000G512Z1.1N24000470_b0.345d1.45r40c0.05_seed")
-	# cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B2000G512Z1.4N1014636_b0.053d1.13r0c0.6_seed")
+	cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B2000G512Z0.8N8015724_b0.385d4r169c0.3_seed", box_size=2)
+	cutsky_EZmock(args, galtype="ELG", redshift="z1.100", in_fol_temp="EZmock_B2000G512Z1.1N24000470_b0.345d1.45r40c0.05_seed", box_size=2)
+	cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B2000G512Z1.4N1014636_b0.053d1.13r0c0.6_seed", box_size=2)
 	
 
 	### Abacus 2Gpc (Tested)
@@ -170,7 +174,7 @@ def main():
 	# cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO", redshift="z1.400", snapshot=12)
 
 	### Abacus 2Gpc (Tested)
-	LC_ABACUS(args, galtype="LRG")
+	# LC_ABACUS(args, galtype="LRG")
 	# LC_ABACUS(args, galtype="QSO")
 
 	### Random Abacus 2Gpc (To BE Tested)
