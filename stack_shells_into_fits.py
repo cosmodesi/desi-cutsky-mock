@@ -10,7 +10,7 @@ from redshift_error_QSO import sample_redshift_error
 
 def count_aux(status_tmp, ra_tmp):
     idx = np.arange(len(status_tmp))
-    mask_Y5 = mask(main=0, nz=0, Y5=0, sv3=0)
+    mask_Y5 = mask(main=0, nz=0, Y5=1, sv3=0)
         
     range_NGC = (ra_tmp < 303.25) & (ra_tmp > 84)
     range_SGC = ~range_NGC
@@ -73,15 +73,16 @@ def fill_array(output_data_array, input_data_array, columns, idx, index_i, n_mea
 
 def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=0, max_seed=0, min_seed=1, mock_random_ic=None, ngc_sgc_tot=None):
     files = glob.glob(inpath + "/*hdf5")
-    print("INFO: The number of shells: ", len(files))
+    files.sort()
 
+    print("INFO: The number of shells: ", len(files))
     counter_TOT, counter_NGC, counter_SGC = count(files)
     print(f"The number of tracers: TOT={counter_TOT}; NGC={counter_NGC}; SGC={counter_SGC}")
 
-    general_columns = [('RA', 'f4'), ('DEC', 'f4'), ('Z', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('NZ', 'f4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4')]
+    general_columns = [('RA', 'f4'), ('DEC', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('NZ', 'f4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4')]
 
     if mock_random_ic == "mock":
-        add_columns = []
+        add_columns = [('Z', 'f4')]
     elif mock_random_ic == "random":
         add_columns = [('ID', 'i4')]
     elif mock_random_ic == "ic":
@@ -121,7 +122,6 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
         idx_Y5_TOT, idx_Y5_NGC, idx_Y5_SGC = count_aux(status_tmp, ra_tmp)
 
         if ngc_sgc_tot == "TOT":
-
             index_i_TOT = fill_array(data_fits_TOT, data, all_columns, idx_Y5_TOT, index_i_TOT, n_mean, survey_geometry_instance)
 
         elif ngc_sgc_tot == "NGC_SGC":
@@ -147,8 +147,8 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
         print("Check last value of RA: ", data_fits_NGC["RA"][-1], ra_tmp[idx_Y5_NGC][-1])
         print("Check last value of RA: ", data_fits_SGC["RA"][-1], ra_tmp[idx_Y5_SGC][-1])
 
-        out_file_NGC = out_file.format(phase=seed) + "Y5_NGC.fits"
-        out_file_SGC = out_file.format(phase=max_seed - seed + min_seed) + "Y5_SGC.fits"
+        out_file_NGC = out_file.format(phase=seed) + "_Y5_NGC.fits"
+        out_file_SGC = out_file.format(phase=max_seed - seed + min_seed) + "_Y5_SGC.fits"
 
         fits = fitsio.FITS(out_file_NGC+"_tmp", "rw")
         fits.write(data_fits_NGC, header=hdict)

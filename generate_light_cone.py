@@ -163,7 +163,7 @@ class LightCone():
 		totra   = np.array([])
 		totdec  = np.array([])
 		totz    = np.array([])
-		tot_aux   = np.array([])
+		tot_aux = np.array([])
 
 		[axx, axy, axz, ayx, ayy, ayz, azx, azy, azz] = self.rotation_matrix
 
@@ -220,11 +220,11 @@ class LightCone():
 
 							vlos    = ne.evaluate("qx * ux + qy * uy + qz * uz")
 							dz      = ne.evaluate("(vlos / clight) * (1 + zp)")
-							tot_aux   = np.append(tot_aux , zp + dz)
+							tot_aux = np.append(tot_aux , zp + dz)
 						elif self.mock_random_ic == "random":
-							tot_aux   = np.append(tot_aux , id_[idx])
+							tot_aux = np.append(tot_aux , id_[idx])
 						elif self.mock_random_ic == "ic":
-							tot_aux   = np.append(tot_aux, dens[idx])
+							tot_aux = np.append(tot_aux, dens[idx])
 
 						tht, phi = hp.vec2ang(np.c_[ux, uy, uz])
 						ra, dec  = tp2rd(tht, phi)

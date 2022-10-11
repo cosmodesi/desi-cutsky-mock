@@ -90,7 +90,7 @@ class SurveyGeometry():
 		redshifts.
 		'''
 		config = self.config
-		z, nz = np.loadtxt(config["nz"][ask], usecols=(config.getint("nz", "col_z"), config.getint("nz", "col_z")), unpack=True)
+		z, nz = np.loadtxt(config["nz"][ask], usecols=(config.getint("nz", "col_z"), config.getint("nz", "col_nz")), unpack=True)
 
 		z_n = z
 		nz_n = (nz / ( 1 - config.getfloat('failurerate', ask) )) * 1.0
@@ -182,7 +182,7 @@ class SurveyGeometry():
 			nproc = len(infiles)
 
 		with mp.Pool(processes=nproc) as pool:
-			pool.map_async(generate_shell, args)
+			pool.map_async(self.generate_shell, args)
 
 			pool.close()
 			pool.join()

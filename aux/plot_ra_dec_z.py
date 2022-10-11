@@ -9,6 +9,7 @@ from astropy.io import fits, ascii
 import scipy.integrate as integrate
 import fitsio
 import h5py
+import pandas as pd
 
 def bits(ask="try"):
     if ask == "LC": return 0  #(0 0 0)
@@ -79,7 +80,7 @@ def plot_ra_dec_z_2foot(filepath, figname="figname", bins=np.linspace(0.5, 2.1, 
     fig2, ax2 = pt.subplots(1, figsize=(8,6))
     fig3, ax3 = pt.subplots(2, 1, sharex=True, figsize=(8,6), gridspec_kw={"height_ratios":[3,1], "hspace":0})
 
-    infiles = glob.glob(filepath + figname + "/*h5py")
+    infiles = glob.glob(filepath + "/*hdf5")
     print(len(infiles))
 
     ra_Y5 = np.empty(0)
@@ -99,6 +100,7 @@ def plot_ra_dec_z_2foot(filepath, figname="figname", bins=np.linspace(0.5, 2.1, 
         ngal = f.attrs["NGAL"]
 
         status = data['STATUS'][()]
+        print(np.unique(status))
         ra_tmp = data['RA'][()]
         dec_tmp = data['DEC'][()]
         z_cosmo_tmp = data['Z_COSMO'][()]            
@@ -111,7 +113,7 @@ def plot_ra_dec_z_2foot(filepath, figname="figname", bins=np.linspace(0.5, 2.1, 
         n_shell = len(z_cosmo_tmp) / vol
         n_shells[i] = n_shell
 
-        n_mean = ngal / (2000* 2000 * 2000)
+        n_mean = ngal / (6000* 6000 * 6000)
         n_means[i] = n_mean
         
         ### Masks SV3 Y5
@@ -159,14 +161,14 @@ def plot_ra_dec_z_2foot(filepath, figname="figname", bins=np.linspace(0.5, 2.1, 
     ax3[0].plot(z, values_Y5/volume_Y5, label="Y5 output n(z)", marker=".", color="red")
     ax3[0].plot(z, values_SV/volume_SV, label="SV3 output n(z)", marker=".", color="blue")
     
-    z_s, nz_s = np.loadtxt("/global/homes/a/avariu/phd/desicodes/generate_survey_mocks/nz_sv3/" + type_.lower() + "_sm_nz_mycosmo_redcor_ev2.1.txt", usecols=(0,1), unpack=True)
+    z_s, nz_s = np.loadtxt(f"/global/homes/a/avariu/phd/desicodes/generate_survey_mocks/nz_files/sm_{type_}_mycosmo_ev2.1.dat_redcor.txt", usecols=(0,1), unpack=True)
    
     ax3[1].set_xlabel("z_cosmo")
     ax3[0].set_ylabel(r"n(z) [Mpc$^{-3}h^{3}$]")
  
     ax3[1].plot(z, nz_s / (values_Y5/volume_Y5), label="input / output Y5", marker=".", color="green")
     ax3[1].plot(z, nz_s / (values_SV/volume_SV), label="input / output SV", marker=".", color="magenta")
-    ax3[0].plot(z, nz_s, label="smooth n(z) / (1-failure_rate)", marker="", color="orange", ls="--")
+    # ax3[0].plot(z, nz_s, label="smooth n(z) / (1-failure_rate)", marker="", color="orange", ls="--")
     
     ax3[1].set_ylim([0.91, 1.09])
     ax3[1].axhline(1, color="grey", ls="--")
@@ -177,21 +179,22 @@ def plot_ra_dec_z_2foot(filepath, figname="figname", bins=np.linspace(0.5, 2.1, 
 
     
     # #####
-    ax1.scatter(ra_Y5, dec_Y5, s=0.0001, color="red", label="Y5 Footprint")  
-    ax1.scatter(ra_SV, dec_SV, s=0.0001, color="blue", label="SV3 Footprint")  
+    # ax1.scatter(ra_Y5, dec_Y5, s=0.0001, color="red", label="Y5 Footprint")  
+    # ax1.scatter(ra_SV, dec_SV, s=0.0001, color="blue", label="SV3 Footprint")  
     
-    ax1.legend()
-    fig1.tight_layout()
-    fig1.savefig(filepath + "/figures/" + figname + "_RA_DEC.png")
+    # ax1.legend()
+    # fig1.tight_layout
+    # fig1.savefig(filepath + "/figures/" + figname + "_RA_DEC.png")
 
     
 def main():
     pt.rcParams.update({'font.size': 12})
 
-    filepath = "/global/cscratch1/sd/avariu/desi/FirstGenMocks/AbacusSummit/CubicBox/"
+    # filepath = "/global/cscratch1/sd/avariu/desi/FirstGenMocks/AbacusSummit/CubicBox/"
     # dict_ = {"qso":np.linspace(0.35, 2.1, 71), "lrg":np.linspace(0.01, 1.6, 80), "elg":np.linspace(0.5936708860759494, 1.6, 80-29)}
     dict_ = {"QSO":np.linspace(0.6, 4.5, 79), "LRG":np.linspace(0.01, 1.6, 81), "ELG":np.linspace(0.01, 1.6, 81)}
     
+    # plot_ra_dec_z_2foot("/global/cscratch1/sd/avariu/desi/FirstGenMocks/EZmock/CubicBox_6Gpc/LRG/z0.800/EZmock_B6000G1536Z0.8N216424548_b0.385d4r169c0.3_seed1/", figname="test.png", bins=dict_["LRG"], type_="LRG")
 
     # for i in range(1, 11):
     #     seed = str(100*i)
@@ -210,19 +213,19 @@ def main():
     # key = "elg"
     # plot_ra_dec_z_2foot(filepath + "/ELG/z1.100/", figname=f"AbacusSummit_base_c000_ph{phase}", bins=dict_[key], type_=key)
     # exit()
-    for i in range(1, 25):
-        phase = str(int(i)).zfill(3)
-        key = "elg"
-        plot_ra_dec_z_2foot(filepath + "/ELG/z1.100/", figname=f"AbacusSummit_base_c000_ph{phase}", bins=dict_[key], type_=key)
+    # for i in range(1, 25):
+    #     phase = str(int(i)).zfill(3)
+    #     key = "elg"
+    #     plot_ra_dec_z_2foot(filepath + "/ELG/z1.100/", figname=f"AbacusSummit_base_c000_ph{phase}", bins=dict_[key], type_=key)
 
-    #     key = "lrg"
-    #     plot_ra_dec_z_2foot(filepath + "/LRG/z0.800/", figname=f"AbacusSummit_base_c000_ph{phase}", bins=dict_[key], type_=key)
+    # #     key = "lrg"
+    # #     plot_ra_dec_z_2foot(filepath + "/LRG/z0.800/", figname=f"AbacusSummit_base_c000_ph{phase}", bins=dict_[key], type_=key)
 
 
-    key = "qso"
-    for i in range(13, 25):
-        phase = str(int(i)).zfill(3)
-        plot_ra_dec_z_2foot(filepath + "/QSO/z1.400/", figname=f"AbacusSummit_base_c000_ph{phase}", bins=dict_[key], type_=key)
+    # key = "qso"
+    # for i in range(13, 25):
+    #     phase = str(int(i)).zfill(3)
+    #     plot_ra_dec_z_2foot(filepath + "/QSO/z1.400/", figname=f"AbacusSummit_base_c000_ph{phase}", bins=dict_[key], type_=key)
 
     
     
