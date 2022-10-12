@@ -113,7 +113,7 @@ def plot_ra_dec_z_2foot(filepath, figname="figname", bins=np.linspace(0.5, 2.1, 
         n_shell = len(z_cosmo_tmp) / vol
         n_shells[i] = n_shell
 
-        n_mean = ngal / (6000* 6000 * 6000)
+        n_mean = ngal / (500 ** 3)
         n_means[i] = n_mean
         
         ### Masks SV3 Y5
@@ -146,8 +146,8 @@ def plot_ra_dec_z_2foot(filepath, figname="figname", bins=np.linspace(0.5, 2.1, 
 
     
     #####
-    values_Y5, bins_, _ = ax2.hist(z_cosmo_Y5, bins=bins, alpha=0.5, color="red", density=False, label="Y5 Footprint")            
-    values_SV, bins_, _ = ax2.hist(z_cosmo_SV, bins=bins, alpha=0.5, color="blue", density=False, label="SV3 Footprint")            
+    values_Y5, bins_, _ = ax2.hist(z_cosmo_Y5, bins=bins, alpha=0.5, color="red", density=False, label="Y5 Footprint", log=True)            
+    values_SV, bins_, _ = ax2.hist(z_cosmo_SV, bins=bins, alpha=0.5, color="blue", density=False, label="SV3 Footprint", log=True)            
     
     ax2.legend()
     fig2.tight_layout()
@@ -168,7 +168,7 @@ def plot_ra_dec_z_2foot(filepath, figname="figname", bins=np.linspace(0.5, 2.1, 
  
     ax3[1].plot(z, nz_s / (values_Y5/volume_Y5), label="input / output Y5", marker=".", color="green")
     ax3[1].plot(z, nz_s / (values_SV/volume_SV), label="input / output SV", marker=".", color="magenta")
-    # ax3[0].plot(z, nz_s, label="smooth n(z) / (1-failure_rate)", marker="", color="orange", ls="--")
+    ax3[0].plot(z, nz_s, label="smooth n(z) / (1-failure_rate)", marker="", color="orange", ls="--")
     
     ax3[1].set_ylim([0.91, 1.09])
     ax3[1].axhline(1, color="grey", ls="--")
@@ -186,14 +186,97 @@ def plot_ra_dec_z_2foot(filepath, figname="figname", bins=np.linspace(0.5, 2.1, 
     # fig1.tight_layout
     # fig1.savefig(filepath + "/figures/" + figname + "_RA_DEC.png")
 
+def plot_ra_dec_z_2foot_fits(filename, figname="figname", bins=np.linspace(0.5, 2.1, 33), type_="none"):
     
+    print(type_)
+    fig1, ax1 = pt.subplots(1, figsize=(8,6))
+    fig2, ax2 = pt.subplots(1, figsize=(8,6))
+    fig3, ax3 = pt.subplots(2, 1, sharex=True, figsize=(8,6), gridspec_kw={"height_ratios":[3,1], "hspace":0})
+
+
+    
+    fits_hdu    = fitsio.FITS(filename, "r")    
+
+    # ra      = fits_hdu[1]["RA"][:]
+    # dec     = fits_hdu[1]["DEC"][:]
+    z_cosmo = fits_hdu[1]["Z_COSMO"][:]
+    status  = fits_hdu[1]["STATUS"][:]
+    ran_num = fits_hdu[1]["RAN_NUM_0_1"][:]
+    nz_fi = fits_hdu[1]["NZ"][:]
+    raw_nz_fi = fits_hdu[1]["RAW_NZ"][:]
+
+    
+    ### Masks SV3 Y5
+    idx = np.arange(len(status))
+
+    mask_Y5 = mask(nz=1, Y5=1, sv3=0)
+    idx_Y5 = idx[(status & (mask_Y5))==mask_Y5]
+
+    mask_SV = mask(nz=1, Y5=0, sv3=1)
+    idx_SV = idx[(status & (mask_SV))==mask_SV]
+
+
+    nz_selected = ran_num < (nz_fi/raw_nz_fi)
+    print(len(z_cosmo[idx_Y5]), len(z_cosmo[nz_selected]))
+    #####
+    values_Y5, bins_, _ = ax2.hist(z_cosmo[idx_Y5], bins=bins, alpha=0.5, color="red", density=False, label="Y5 Footprint")            
+    values_SV, bins_, _ = ax2.hist(z_cosmo[idx_SV], bins=bins, alpha=0.5, color="blue", density=False, label="SV3 Footprint")            
+    
+    ax2.legend()
+    fig2.tight_layout()
+    fig2.savefig(figname + "_number_z.png")
+
+
+    #####
+    z, volume_Y5 = compute_volume(bins_, surface="fulldesi")
+    z, volume_SV = compute_volume(bins_, surface="SVCOMPUTE")
+
+    ax3[0].plot(z, values_Y5/volume_Y5, label="Y5 output n(z)", marker=".", color="red")
+    ax3[0].plot(z, values_SV/volume_SV, label="SV3 output n(z)", marker=".", color="blue")
+    
+    z_s, nz_s = np.loadtxt(f"/global/homes/a/avariu/phd/desicodes/generate_survey_mocks/nz_files/sm_{type_}_mycosmo_ev2.1.dat", usecols=(0,1), unpack=True)
+   
+    ax3[1].set_xlabel("z_cosmo")
+    ax3[0].set_ylabel(r"n(z) [Mpc$^{-3}h^{3}$]")
+
+    # ax3[0].hist2d(ran_num, z_cosmo, bins=100) 
+    ax3[1].plot(z, nz_s / (values_Y5/volume_Y5), label="input / output Y5", marker=".", color="green")
+    ax3[1].plot(z, nz_s / (values_SV/volume_SV), label="input / output SV", marker=".", color="magenta")
+    ax3[0].plot(z, nz_s, label="smooth n(z) / (1-failure_rate)", marker="", color="orange", ls="--")
+    
+    ax3[1].set_ylim([0.91, 1.09])
+    ax3[1].axhline(1, color="grey", ls="--")
+    
+    ax3[0].legend()
+    fig3.tight_layout()
+    fig3.savefig(figname + "_nz_V.png")
+
+    ax1.hist(ran_num, bins=101)
+    fig1.savefig(figname + "_ran.png")
+    
+    # #####
+    # ax1.scatter(ra_Y5, dec_Y5, s=0.0001, color="red", label="Y5 Footprint")  
+    # ax1.scatter(ra_SV, dec_SV, s=0.0001, color="blue", label="SV3 Footprint")  
+    
+    # ax1.legend()
+    # fig1.tight_layout
+    # fig1.savefig(filepath + "/figures/" + figname + "_RA_DEC.png")
+
+
 def main():
     pt.rcParams.update({'font.size': 12})
 
     # filepath = "/global/cscratch1/sd/avariu/desi/FirstGenMocks/AbacusSummit/CubicBox/"
     # dict_ = {"qso":np.linspace(0.35, 2.1, 71), "lrg":np.linspace(0.01, 1.6, 80), "elg":np.linspace(0.5936708860759494, 1.6, 80-29)}
-    dict_ = {"QSO":np.linspace(0.6, 4.5, 79), "LRG":np.linspace(0.01, 1.6, 81), "ELG":np.linspace(0.01, 1.6, 81)}
+    dict_ = {"QSO":np.linspace(0.6, 4.5, 79), "LRG":np.linspace(0.01, 1.61, 81), "ELG":np.linspace(0.01, 1.61, 81)}
+    infile = "/global/cscratch1/sd/avariu/desi/FirstGenMocks/AbacusSummit/CubicBox/small/LRG/z0.800/fits/cutsky_LRG_z0.800_small_ph3001.fits"
     
+    # infile = "/global/cscratch1/sd/avariu/desi/FirstGenMocks/EZmock/CubicBox/LRG/z0.800/sort_cutsky_LRG_z0.800_EZmock_B2000G512Z0.8N8015724_b0.385d4r169c0.3_seed1.fits"
+    plot_ra_dec_z_2foot_fits(infile, figname=infile, bins=dict_["LRG"], type_="LRG")
+    
+    # filepath = "//global/cscratch1/sd/avariu/desi/FirstGenMocks/AbacusSummit/CubicBox/small//"
+    # plot_ra_dec_z_2foot(filepath + "/LRG/z0.800/small_ph3001/", figname=f"small_base_c000_ph3001", bins=dict_["LRG"], type_="LRG")
+
     # plot_ra_dec_z_2foot("/global/cscratch1/sd/avariu/desi/FirstGenMocks/EZmock/CubicBox_6Gpc/LRG/z0.800/EZmock_B6000G1536Z0.8N216424548_b0.385d4r169c0.3_seed1/", figname="test.png", bins=dict_["LRG"], type_="LRG")
 
     # for i in range(1, 11):

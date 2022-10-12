@@ -100,7 +100,7 @@ def cutsky_EZmock(args, galtype=None, redshift=None, in_fol_temp=None, box_size=
 		else:
 			# lightcone_instance.generate_shells(path_instance, snapshot="", redshift=redshift, cutsky=True, nproc=16, n_subboxes=64, cat_seed=i)
 			# survey_geometry_instance.shell(path_instance, nproc=64)
-			out_fits = path_instance.dir_out + redshift + "/sort_cutsky_" + galtype + "_" + redshift + "_" + in_fol_temp + f"{phase}.fits"
+			out_fits = path_instance.dir_out + redshift + "/cutsky_" + galtype + "_" + redshift + "_" + in_fol_temp + f"{phase}.fits"
 			stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
 
 
@@ -141,24 +141,26 @@ def cutsky_small_ABACUS(args, galtype=None, gal_in_name=None, redshift=None, sna
 	lightcone_instance = LightCone(config_file, args)
 	survey_geometry_instance = SurveyGeometry(config_file, args, galtype=galtype)
 
+
+	i = args.phase
 	# ######### CutSky
-	for i in range(3000, 3000 + 1):
-		phase = str(int(i)).zfill(3)
+	# for i in range(init_i, init_i + 1):
+	phase = str(int(i)).zfill(3)
 
-		in_part_path = "{redshift}/"
-		input_name = gal_in_name + "_snap{snapshot}_ph" + phase + ".gcat.sub{subbox}.fits"
+	in_part_path = "{redshift}/"
+	input_name = gal_in_name + "_snap{snapshot}_ph" + phase + ".gcat.sub{subbox}.fits"
 
-		out_part_path = f"/{redshift}/{in_fol_temp}{phase}/"		
-		output_name = gal_in_name + "_snap{snapshot}_ph" + phase + "_shell_{shellnum}.hdf5"
+	out_part_path = f"/{redshift}/{in_fol_temp}{phase}/"		
+	output_name = gal_in_name + "_snap{snapshot}_ph" + phase + "_shell_{shellnum}.hdf5"
 
-		path_instance = Paths(config_file, args, in_part_path, input_name, out_part_path, output_name)
+	path_instance = Paths(config_file, args, in_part_path, input_name, out_part_path, output_name)
 
-		lightcone_instance.generate_shells(path_instance, snapshot=snapshot, redshift=redshift, cutsky=True, nproc=1, n_subboxes=1, cat_seed=i)
+	lightcone_instance.generate_shells(path_instance, snapshot=snapshot, redshift=redshift, cutsky=True, nproc=1, n_subboxes=1, cat_seed=i)
 
-		survey_geometry_instance.shell(path_instance, nproc=64, todo=3)
-		
-		out_fits = path_instance.dir_out + f"/{redshift}/fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
-		stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
+	survey_geometry_instance.shell(path_instance, nproc=8, todo=3)
+	
+	out_fits = path_instance.dir_out + f"/{redshift}/fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
+	stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
 
 
 def main():
@@ -170,12 +172,12 @@ def main():
 	parser.add_argument("--galaxy", type=str, help="LRG QSO ELG")
 	parser.add_argument("--phase", type=int, help="phase of the catalog")
 	parser.add_argument("--ngc_sgc", type=str, help="NGC or SGC preferred rotation")
-	parser.add_argument("--mock_random_ic", type=str, help="mock, random or IC")
+	parser.add_argument("--mock_random_ic", type=str, help="mock, random or ic")
 
 	args = parser.parse_args()
 
-	# import time
-	# start = time.time()
+	import time
+	start = time.time()
 
 	### EZmocks 6Gpc (Tested)
 	# cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B6000G1536Z0.8N216424548_b0.385d4r169c0.3_seed", box_size=6)
@@ -198,7 +200,7 @@ def main():
 	# cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELGlowDens", redshift="z1.100", snapshot=16)
 	# cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO", redshift="z1.400", snapshot=12)
 
-	### Abacus 505Mpc (Not Tested)
+	### Abacus 500Mpc
 	cutsky_small_ABACUS(args, galtype="LRG", gal_in_name="LRG", redshift="z0.800", snapshot=20)
 	# cutsky_small_ABACUS(args, galtype="ELG", gal_in_name="ELGlowDens", redshift="z1.100", snapshot=16)
 	# cutsky_small_ABACUS(args, galtype="QSO", gal_in_name="QSO", redshift="z1.400", snapshot=12)
@@ -215,8 +217,8 @@ def main():
 	### IC Abacus 2Gpc (To BE Tested)
 	# cutsky_ic_ABACUS(args, galtype="LRG", redshift="ic", snapshot=576)
 
-	# end = time.time()
-	# print(f"################## FINISHED in {end-start}")
+	end = time.time()
+	print(f"################## FINISHED in {end-start}")
 
 	
 if __name__ == '__main__':

@@ -220,9 +220,9 @@ class LightCone():
 
 							vlos    = ne.evaluate("qx * ux + qy * uy + qz * uz")
 							dz      = ne.evaluate("(vlos / clight) * (1 + zp)")
-							tot_aux = np.append(tot_aux , zp + dz)
+							tot_aux = np.append(tot_aux, zp + dz)
 						elif self.mock_random_ic == "random":
-							tot_aux = np.append(tot_aux , id_[idx])
+							tot_aux = np.append(tot_aux, id_[idx])
 						elif self.mock_random_ic == "ic":
 							tot_aux = np.append(tot_aux, dens[idx])
 

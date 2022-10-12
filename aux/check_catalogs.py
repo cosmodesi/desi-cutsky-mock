@@ -114,9 +114,9 @@ def main():
     # new_cat = "/global/cscratch1/sd/avariu/desi/FirstGenMocks/EZmock/CubicBox_2Gpc_old_code/LRG/z0.800/EZmock_B2000G512Z0.8N8015724_b0.385d4r169c0.3_seed1/seed1.suball_shell_{}.h5py"
     # new_cod = "/global/cscratch1/sd/avariu/desi/FirstGenMocks/EZmock/CubicBox/LRG/z0.800/EZmock_B2000G512Z0.8N8015724_b0.385d4r169c0.3_seed1/seed_1_shell_{}.hdf5"
     
-    new_cat = "//global/cscratch1/sd/avariu/desi/FirstGenMocks/EZmock/CubicBox_2Gpc_old_code/LRG/z0.800/fits/sort_cutsky_LRG_z0.800_EZmock_B2000G512Z0.8N8015724_b0.385d4r169c0.3_seed1.fits"
+    # new_cat = "//global/cscratch1/sd/avariu/desi/FirstGenMocks/EZmock/CubicBox_2Gpc_old_code/LRG/z0.800/fits/sort_cutsky_LRG_z0.800_EZmock_B2000G512Z0.8N8015724_b0.385d4r169c0.3_seed1.fits"
     new_cod = "/global/cscratch1/sd/avariu/desi/FirstGenMocks/EZmock/CubicBox/LRG/z0.800/sort_cutsky_LRG_z0.800_EZmock_B2000G512Z0.8N8015724_b0.385d4r169c0.3_seed1.fits"
-    # old_cat = "/global/cfs/cdirs/desi/cosmosim/FirstGenMocks/EZmock/CutSky/LRG/z0.800/cutsky_LRG_z0.800_EZmock_B2000G512Z0.8N8015724_b0.385d4r169c0.3_seed1.fits"
+    old_cat = "/global/cfs/cdirs/desi/cosmosim/FirstGenMocks/EZmock/CutSky/LRG/z0.800/cutsky_LRG_z0.800_EZmock_B2000G512Z0.8N8015724_b0.385d4r169c0.3_seed1.fits"
     
 
     # for i in range(1, 128 + 1):
@@ -131,33 +131,34 @@ def main():
 
     #     f_new.close()
     #     f_old.close()
-
-    # print("Cat 1")
-    # df_new = get_sorted_df(old_cat)
-    
-    # print("Cat 2")
-    # df_cod = get_sorted_df(new_cod)
-
-    fits_cat = fitsio.FITS(new_cat, "r")
-    fits_cod = fitsio.FITS(new_cod, "r")
-
-    status_cod = fits_cat[1]["STATUS"][:]
-    idx_cod = np.arange(len(status_cod))
-
     mask_Y5 = mask(nz=0, Y5=1, sv3=0)
-    idx_cod_Y5  = idx_cod[((status_cod & (mask_Y5))==mask_Y5)]
 
+    print("Cat 1")
+    df_1     = get_sorted_df(old_cat)
+    # fits_1   = fitsio.FITS(old_cat, "r")
+    # status_1 = fits_1[1]["STATUS"][:]
+    # idx_1    = np.arange(len(status_1))
+    
+    # idx_1_Y5  = idx_1[((status_1 & (mask_Y5))==mask_Y5)]
+
+    print("Cat 2")
+    df_2 = get_sorted_df(new_cod)
+    # fits_2 = fitsio.FITS(new_cod, "r")
+
+
+
+    
     for col in ["RA", "DEC", "Z_COSMO", "Z", "STATUS", "RAN_NUM_0_1"]:
-        cod = fits_cod[1][col][:]
-        cat = fits_cat[1][col][:]
+        # col_1 = fits_1[1][col][:]
+        # col_2 = fits_2[1][col][:]
 
-        # diff = df_new[col].values - df_cod[col].values
-        diff = cod - cat[idx_cod_Y5]
+        diff = df_1[col].values - df_2[col].values
+        # diff = col_2 - col_1[idx_1_Y5]
         # print(col, diff, np.sum(np.abs(diff)), len(diff[diff!=0]), len(diff))
-        print(col, np.sum(np.abs(diff)), len(diff[diff!=0]), len(diff))
+        print(col, diff, np.sum(np.abs(diff)), len(diff[diff!=0]), len(diff))
 
-    fits_cat.close()
-    fits_cod.close()
+    fits_1.close()
+    fits_2.close()
 
 if __name__== '__main__':
     main()
