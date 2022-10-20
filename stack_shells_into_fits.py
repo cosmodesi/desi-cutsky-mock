@@ -46,9 +46,11 @@ def count(files):
 
 def fill_array(output_data_array, input_data_array, columns, idx, index_i, n_mean, survey_geometry_instance):
     z_cosmo_tmp = input_data_array["Z_COSMO"][()]
-    z_rsd_tmp   = input_data_array["Z_RSD"][()]
     size_ = len(z_cosmo_tmp[idx])
 
+    if "Z_RSD" in input_data_array.keys():
+        z_rsd_tmp   = input_data_array["Z_RSD"][()]
+    
     index_f = size_ + index_i
 
     for col, type_ in columns:

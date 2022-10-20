@@ -6,6 +6,7 @@
 -   [Dependencies](#Dependencies)
 -   [Usage](#Usage)
 -   [References](#references)
+-   [Contributors][#Contributors]
 -   [Acknowledgements](#Acknowledgements)
 
 ## Introduction
@@ -59,5 +60,9 @@ python main.py -h
 
 Most of them, however, should be given in the configuration file. Examples of configuration files can be found in the ([EZmock/config](EZmock/config)) and ([ABACUS/config](ABACUS/config)) folders.
 
+## Contributors
+
+I thank [Dr. Shadab Alam](https://github.com/shadaba) for his support and suggestions. 
+
 ## Acknowledgements
-This code is inspired by [prcaetano's](https://github.com/prcaetano/gallightcone) and [Dr. Chia-Hsun Chuang](https://github.com/chia-hsun-chuang/apply_desifootprint_nz) and I thank Dr. Shadab Alam for his support and suggestions.
+This code is inspired by [prcaetano's](https://github.com/prcaetano/gallightcone) and [Dr. Chia-Hsun Chuang's](https://github.com/chia-hsun-chuang/apply_desifootprint_nz) packages.

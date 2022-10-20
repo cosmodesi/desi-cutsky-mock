@@ -51,6 +51,33 @@ def create_random(in_path, random_out_path, tracer, snap, random, partname="ph00
 
         # return data_r, preffix, chilow, chiupp
 
+
+def create_random_one_box(random_out_path, tracer, random, length=1, boxL=1):
+
+    print("NGAL=",length, "BOXsize=", boxL)
+
+    os.mkdir(random_out_path + f"/S{100 * random}/")
+
+    np.random.seed(int(100 * random))
+    X = np.random.uniform(low=0, high=boxL, size=length)
+    Y = np.random.uniform(low=0, high=boxL, size=length)
+    Z = np.random.uniform(low=0, high=boxL, size=length)
+    gal_index = np.arange(length)
+    
+    index_ = 0
+    filename = random_out_path + f"/S{100 * random}/" + tracer + "_SB" + str(index_) + f"_S{100 * random}.fits"
+    print(filename)
+    data = np.zeros(len(X), dtype=[('x','f4'), ('y','f4'), ('z','f4'), ('id', 'i4')])
+    fits = fitsio.FITS(filename, 'rw')
+    data["x"] = X
+    data["y"] = Y
+    data["z"] = Z
+    data["id"] = gal_index
+    fits.write(data)
+    fits.close()
+                
+        
+
 def create_random_old(random_out_path, random, length=1, boxL=1):
 
 
@@ -79,8 +106,10 @@ def main():
     # random_out_path = main_out_path
     # create_random(in_path, random_out_path, "LRG", "snap20", 10000, partname="")
 
-    main_out_path = "/global/cscratch1/sd/avariu/desi/FirstGenMocks/EZmock/CubicBox_6Gpc/"
-    for i in range(0, 10):
+    # main_out_path = "/global/cscratch1/sd/avariu/desi/FirstGenMocks/EZmock/CubicBox_6Gpc/"
+    for i in range(3000, 4100, 100):
+        create_random_one_box("/global/cscratch1/sd/avariu/desi/FirstGenMocks/RandomBox/small/LRG/", "LRG", i, length=126624, boxL=500)
+
         # in_path = main_out_path  + "/QSO/z1.400/AbacusSummit_base_c000_ph000/"
         # random_out_path = main_out_path + "/ran_box/QSO/"
         # create_random(in_path, random_out_path, "QSO", "snap12", i, partname="ph000.gcat.suball._shell_100.h5py", boxL=6000, length=27432000)
@@ -93,7 +122,7 @@ def main():
         # random_out_path = main_out_path + "/ran_box/ELG/"
         # create_random(in_path, random_out_path, "ELG", "snapX", i, partname="ph000.gcat.suball._shell_100.h5py", boxL=6000, length=648010680)
 
-        create_random_old("/global/cscratch1/sd/avariu/desi/small_box_large_box/3gpc_rand/box/", i, length=88448481, boxL=3000)
+        # create_random_old("/global/cscratch1/sd/avariu/desi/small_box_large_box/3gpc_rand/box/", i, length=88448481, boxL=3000)
 
 if __name__ == '__main__':
 	main()
