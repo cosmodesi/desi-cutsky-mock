@@ -16,12 +16,15 @@ import h5py
 
 def bits(ask="try"):
 	"Used"
-	if ask == "LC":              return 0 #(0 0 0 0)
-	if ask == "downsample":      return 1 #(0 0 0 1)
-	if ask == "Y5foot":          return 2 #(0 0 1 0)
-	if ask == "SV3foot":         return 4 #(0 1 0 0)
-	if ask == "downsample_main": return 8 #(1 0 0 0)
-	sys.exit()
+	if ask == "LC":              return 0  #(0 0 0 0 0 0)
+	if ask == "downsample":      return 1  #(0 0 0 0 0 1)
+	if ask == "Y5foot":          return 2  #(0 0 0 0 1 0)
+	if ask == "SV3foot":         return 4  #(0 0 0 1 0 0)
+	if ask == "downsample_main": return 8  #(0 0 1 0 0 0)
+	if ask == "downsample_LOP":  return 16 #(0 1 0 0 0 0)
+	if ask == "downsample_VLO":  return 32 #(1 0 0 0 0 0)
+	print(f"You have asked for {ask}. Which does not exist. Please check bits() function in apply_survey_geometry.py.")
+	os._exit(1)
 
 
 def mask(main=0, nz=0, Y5=0, sv3=0):
@@ -44,8 +47,8 @@ def apply_footprint(ra, dec, footprint_mask):
 		point = foot.is_point_in_desi(tiles, ra, dec)
 		bitval = bits(ask="SV3foot")
 	else:
-		print("ERROR: Wrong footprint.")
-		sys.exit()
+		print("ERROR: Wrong footprint.", flush=True)
+		os._exit(1)
 
 	idx   = np.where(point)
 
@@ -104,6 +107,7 @@ class SurveyGeometry():
 
 		# downsample
 		nz_selected = ran < nz / n_mean
+		n = nz / n_mean		
 		idx         = np.where(nz_selected)
 		print("DOWNSAMPLE: Selected {} out of {} galaxies.".format(len(idx[0]), len(z_cat)), flush=True)
 
@@ -112,22 +116,42 @@ class SurveyGeometry():
 		newbits = np.zeros(len(z_cat), dtype=np.int32)
 		newbits[idx] = bitval
 
-		return newbits
+		return newbits, nz, idx
 		
 	def downsample(self, z_cat, n_mean):
 		""" downsample galaxies following n(z) model specified in galtype"""
 
-		ran     = np.random.rand(len(z_cat))
-
-		newbits = self.downsample_aux(z_cat, ran, n_mean, ask="downsample")
+		ran_i     = np.random.rand(len(z_cat))
+		outbits = []
 
 		if self.galtype == "LRG":
-			newbits_main = self.downsample_aux(z_cat, ran, n_mean, ask="downsample_main")
+			newbits     , _, _ = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample")
+			newbits_main, _, _ = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample_main")
+			
 			outbits = np.bitwise_or(newbits, newbits_main)
+			ran = [ran_i]
 
-			return outbits, ran
+		elif self.galtype == "ELG":
+			newbits_LOP, nz_LOP, idx_LOP = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample_LOP")
+			ran_n     = np.random.rand(len(z_cat))
+			ran_n[idx_LOP] = np.inf
+			newbits_VLO, _, _            = self.downsample_aux(z_cat, ran_n, n_mean - nz_LOP, ask="downsample_VLO")
+			
+			outbits = np.bitwise_or(newbits_LOP, newbits_VLO)
+			ran = [ran_i, ran_n]
+		
+		elif self.galtype == "QSO":	
+			outbits, _, _ = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample")
+			ran = [ran_i]
+		
+		else:
+			print("Wrong galaxy type.")
+			os._exit(1)
 
-		return newbits, ran
+
+	
+		return outbits, ran
+		
 
 	def generate_shell(self, args):
 		infile, footprint_mask, todo = args
@@ -148,24 +172,29 @@ class SurveyGeometry():
 		dec = data['DEC'][()]
 		z_cosmo = data['Z_COSMO'][()]
 
-		foot_bit0 = apply_footprint(ra, dec, 0)
-		foot_bit2 = apply_footprint(ra, dec, 2)
-		foot_bit = np.bitwise_or(foot_bit0, foot_bit2)
+		# foot_bit = apply_footprint(ra, dec, 0)
+		# foot_bit2 = apply_footprint(ra, dec, 2)
+		# foot_bit = np.bitwise_or(foot_bit0, foot_bit2)
 
 		down_bit, ran_arr = self.downsample(z_cosmo, n_mean)
 
-		out_arr = np.bitwise_or(foot_bit, down_bit)
+		out_arr = down_bit# np.bitwise_or(foot_bit, down_bit)
 		out_arr = out_arr.astype(np.int32)
 
 		if "STATUS" in data.keys():
+			f['galaxy']["STATUS"][:] = out_arr
 			print("WARNING: STATUS EXISTS. New STATUS has not been written.")
 		else:
 			f.create_dataset('galaxy/STATUS', data=out_arr,  dtype=np.int32)
 
 		if "RAN_NUM_0_1" in data.keys():
+			f['galaxy']["RAN_NUM_0_1"][:] = ran_arr[0]
+			f.create_dataset('galaxy/RAN_NUM_0_1_VLO', data=ran_arr[1], dtype=np.float32)
 			print("WARNING: RAN_NUM_0_1 EXISTS. New RAN_NUM_0_1 has not been written.")
 		else:
-			f.create_dataset('galaxy/RAN_NUM_0_1', data=ran_arr, dtype=np.float32)
+			f.create_dataset('galaxy/RAN_NUM_0_1', data=ran_arr[0], dtype=np.float32)
+			if self.galtype == "ELG":
+				f.create_dataset('galaxy/RAN_NUM_0_1_VLO', data=ran_arr[1], dtype=np.float32)
 
 		f.close()
 
@@ -187,7 +216,8 @@ class SurveyGeometry():
 	def shell_series(self, path_instance, footprint_mask=0, todo=1):
 
 		infiles = glob.glob(path_instance.shells_out_path + "/*.hdf5")
-
+		print(infiles)
 		for file_ in infiles:
-			args = [file_, self.galtype, self.tracer_id, footprint_mask, todo, self.config]
-			generate_shell(args)
+			args = [file_, footprint_mask, todo]
+			# args = [infiles[1], footprint_mask, todo]
+			self.generate_shell(args)

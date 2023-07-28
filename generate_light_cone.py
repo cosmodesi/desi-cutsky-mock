@@ -255,7 +255,7 @@ class LightCone():
 
 		except IOError:
 			print(prefix + f"WARNING: Couldn't open {infile}.", file=sys.stderr)
-			sys.exit()
+			os._exit(1)
 		return data
 
 
