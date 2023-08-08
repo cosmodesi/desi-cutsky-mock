@@ -22,7 +22,6 @@ def bits(ask="try"):
 	if ask == "SV3foot":         return 4  #(0 0 0 1 0 0)
 	if ask == "downsample_main": return 8  #(0 0 1 0 0 0)
 	if ask == "downsample_LOP":  return 16 #(0 1 0 0 0 0)
-	if ask == "downsample_VLO":  return 32 #(1 0 0 0 0 0)
 	print(f"You have asked for {ask}. Which does not exist. Please check bits() function in apply_survey_geometry.py.")
 	os._exit(1)
 
@@ -132,12 +131,13 @@ class SurveyGeometry():
 			ran = [ran_i]
 
 		elif self.galtype == "ELG":
-			newbits_LOP, nz_LOP, idx_LOP = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample_LOP")
+			newbits, nz, idx = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample")
+		
 			ran_n     = np.random.rand(len(z_cat))
-			ran_n[idx_LOP] = np.inf
-			newbits_VLO, _, _            = self.downsample_aux(z_cat, ran_n, n_mean - nz_LOP, ask="downsample_VLO")
+			ran_n[~idx] = np.inf
+			newbits_LOP, _, _            = self.downsample_aux(z_cat, ran_n, nz , ask="downsample_LOP")
 			
-			outbits = np.bitwise_or(newbits_LOP, newbits_VLO)
+			outbits = np.bitwise_or(newbits, newbits_LOP)
 			ran = [ran_i, ran_n]
 		
 		elif self.galtype == "QSO":	
@@ -172,13 +172,13 @@ class SurveyGeometry():
 		dec = data['DEC'][()]
 		z_cosmo = data['Z_COSMO'][()]
 
-		# foot_bit = apply_footprint(ra, dec, 0)
+		foot_bit = apply_footprint(ra, dec, 0)
 		# foot_bit2 = apply_footprint(ra, dec, 2)
 		# foot_bit = np.bitwise_or(foot_bit0, foot_bit2)
 
 		down_bit, ran_arr = self.downsample(z_cosmo, n_mean)
 
-		out_arr = down_bit# np.bitwise_or(foot_bit, down_bit)
+		out_arr = np.bitwise_or(foot_bit, down_bit)
 		out_arr = out_arr.astype(np.int32)
 
 		if "STATUS" in data.keys():
@@ -189,12 +189,12 @@ class SurveyGeometry():
 
 		if "RAN_NUM_0_1" in data.keys():
 			f['galaxy']["RAN_NUM_0_1"][:] = ran_arr[0]
-			f.create_dataset('galaxy/RAN_NUM_0_1_VLO', data=ran_arr[1], dtype=np.float32)
+			f.create_dataset('galaxy/RAN_NUM_0_1_LOP', data=ran_arr[1], dtype=np.float32)
 			print("WARNING: RAN_NUM_0_1 EXISTS. New RAN_NUM_0_1 has not been written.")
 		else:
 			f.create_dataset('galaxy/RAN_NUM_0_1', data=ran_arr[0], dtype=np.float32)
 			if self.galtype == "ELG":
-				f.create_dataset('galaxy/RAN_NUM_0_1_VLO', data=ran_arr[1], dtype=np.float32)
+				f.create_dataset('galaxy/RAN_NUM_0_1_LOP', data=ran_arr[1], dtype=np.float32)
 
 		f.close()
 

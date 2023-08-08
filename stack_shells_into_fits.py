@@ -60,8 +60,6 @@ def fill_array(output_data_array, input_data_array, columns, idx, index_i, n_mea
             output_data_array["NZ_MAIN"][index_i: index_f] = survey_geometry_instance.get_nz(z_cosmo_tmp[idx], ask="downsample_main")
         elif col == "NZ_LOP":
             output_data_array["NZ_LOP"][index_i: index_f] = survey_geometry_instance.get_nz(z_cosmo_tmp[idx], ask="downsample_LOP")
-        elif col == "NZ_VLO":
-            output_data_array["NZ_VLO"][index_i: index_f] = survey_geometry_instance.get_nz(z_cosmo_tmp[idx], ask="downsample_VLO")
         elif col == "RAW_NZ":
             output_data_array["RAW_NZ"][index_i: index_f] = np.ones(len(z_cosmo_tmp[idx])) * n_mean
         elif col == "Z_ERR_3GAUSS":
@@ -85,7 +83,7 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
     counter_TOT, counter_NGC, counter_SGC = count(files)
     print(f"The number of tracers: TOT={counter_TOT}; NGC={counter_NGC}; SGC={counter_SGC}")
 
-    general_columns = [('RA', 'f4'), ('DEC', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4')]
+    general_columns = [('RA', 'f4'), ('DEC', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
 
     if mock_random_ic == "mock":
         add_columns = [('Z', 'f4')]
@@ -95,11 +93,11 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
         add_columns = [('ONEplusDELTA', 'f4')]
 
     if survey_geometry_instance.galtype == "LRG":
-        specific_columns = [('NZ', 'f4'), ('NZ_MAIN', 'f4')]
+        specific_columns = [('NZ_MAIN', 'f4')]
     elif survey_geometry_instance.galtype == "QSO":
-        specific_columns =  [('NZ', 'f4'), ('Z_ERR_3GAUSS', 'f4'), ('Z_ERR_SIG500', 'f4')]
+        specific_columns =  [('Z_ERR_3GAUSS', 'f4'), ('Z_ERR_SIG500', 'f4')]
     else:
-        specific_columns = [('NZ_LOP', 'f4'), ('NZ_VLO', 'f4'), ('RAN_NUM_0_1_VLO', 'f4')]    
+        specific_columns = [('NZ_LOP', 'f4'), ('RAN_NUM_0_1_LOP', 'f4')]    
 
     all_columns = general_columns + add_columns + specific_columns
     
@@ -137,7 +135,7 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
 
         f.close()
 
-    hdict = {'SV3_AREA': 207.5, 'Y5_AREA':14850.4}
+    hdict = {'SV3_AREA': 207.5, 'Y5_TOT_AREA':14850.4, 'Y5_SGC_AREA':4666.5, 'Y5_NGC_AREA':10183.9}
 
     if ngc_sgc_tot == "TOT":
         print("Check last value of RA: ", data_fits_TOT["RA"][-1], ra_tmp[idx_Y5_TOT][-1])
