@@ -93,7 +93,7 @@ def cutsky_EZmock(args, galtype=None, redshift=None, in_fol_temp=None, box_size=
 
 		if box_size == 6:
 			# lightcone_instance.generate_shells(path_instance, snapshot="", redshift=redshift, cutsky=True, nproc=16, n_subboxes=216, cat_seed=i)
-			survey_geometry_instance.shell(path_instance, nproc=64)
+			# survey_geometry_instance.shell(path_instance, nproc=64)
 			# survey_geometry_instance.shell_series(path_instance)
 			out_fits = path_instance.dir_out + redshift + "/cutsky_" + galtype + "_" + redshift + "_" + in_fol_temp + "{phase}"
 			# stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="NGC_SGC", seed=i, max_seed=2000)

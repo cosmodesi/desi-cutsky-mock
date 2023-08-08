@@ -114,8 +114,7 @@ class SurveyGeometry():
 
 		newbits = np.zeros(len(z_cat), dtype=np.int32)
 		newbits[idx] = bitval
-
-		return newbits, nz, idx
+		return newbits, nz
 		
 	def downsample(self, z_cat, n_mean):
 		""" downsample galaxies following n(z) model specified in galtype"""
@@ -124,18 +123,17 @@ class SurveyGeometry():
 		outbits = []
 
 		if self.galtype == "LRG":
-			newbits     , _, _ = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample")
-			newbits_main, _, _ = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample_main")
+			newbits     , _ = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample")
+			newbits_main, _ = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample_main")
 			
 			outbits = np.bitwise_or(newbits, newbits_main)
 			ran = [ran_i]
 
 		elif self.galtype == "ELG":
-			newbits, nz, idx = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample")
-		
-			ran_n     = np.random.rand(len(z_cat))
-			ran_n[~idx] = np.inf
-			newbits_LOP, _, _            = self.downsample_aux(z_cat, ran_n, nz , ask="downsample_LOP")
+			newbits, nz         = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample")
+			ran_n               = np.random.rand(len(z_cat))
+			ran_n[newbits == 0] = np.inf
+			newbits_LOP, _      = self.downsample_aux(z_cat, ran_n, nz , ask="downsample_LOP")
 			
 			outbits = np.bitwise_or(newbits, newbits_LOP)
 			ran = [ran_i, ran_n]
@@ -148,8 +146,6 @@ class SurveyGeometry():
 			print("Wrong galaxy type.")
 			os._exit(1)
 
-
-	
 		return outbits, ran
 		
 
@@ -182,14 +178,14 @@ class SurveyGeometry():
 		out_arr = out_arr.astype(np.int32)
 
 		if "STATUS" in data.keys():
-			f['galaxy']["STATUS"][:] = out_arr
+			# f['galaxy']["STATUS"][:] = out_arr
 			print("WARNING: STATUS EXISTS. New STATUS has not been written.")
 		else:
 			f.create_dataset('galaxy/STATUS', data=out_arr,  dtype=np.int32)
 
 		if "RAN_NUM_0_1" in data.keys():
-			f['galaxy']["RAN_NUM_0_1"][:] = ran_arr[0]
-			f.create_dataset('galaxy/RAN_NUM_0_1_LOP', data=ran_arr[1], dtype=np.float32)
+			# f['galaxy']["RAN_NUM_0_1"][:] = ran_arr[0]
+			# f.create_dataset('galaxy/RAN_NUM_0_1_LOP', data=ran_arr[1], dtype=np.float32)
 			print("WARNING: RAN_NUM_0_1 EXISTS. New RAN_NUM_0_1 has not been written.")
 		else:
 			f.create_dataset('galaxy/RAN_NUM_0_1', data=ran_arr[0], dtype=np.float32)
