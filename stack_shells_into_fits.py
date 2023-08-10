@@ -56,8 +56,6 @@ def fill_array(output_data_array, input_data_array, columns, idx, index_i, n_mea
     for col, type_ in columns:
         if col == "NZ":
             output_data_array["NZ"][index_i: index_f]      = survey_geometry_instance.get_nz(z_cosmo_tmp[idx], ask="downsample")
-        elif col == "NZ_MAIN":
-            output_data_array["NZ_MAIN"][index_i: index_f] = survey_geometry_instance.get_nz(z_cosmo_tmp[idx], ask="downsample_main")
         elif col == "NZ_LOP":
             output_data_array["NZ_LOP"][index_i: index_f] = survey_geometry_instance.get_nz(z_cosmo_tmp[idx], ask="downsample_LOP")
         elif col == "RAW_NZ":
@@ -92,12 +90,12 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
     elif mock_random_ic == "ic":
         add_columns = [('ONEplusDELTA', 'f4')]
 
-    if survey_geometry_instance.galtype == "LRG":
-        specific_columns = [('NZ_MAIN', 'f4')]
+    if survey_geometry_instance.galtype == "ELG":
+        specific_columns = [('NZ_LOP', 'f4'), ('RAN_NUM_0_1_LOP', 'f4')]    
     elif survey_geometry_instance.galtype == "QSO":
         specific_columns =  [('Z_ERR_3GAUSS', 'f4'), ('Z_ERR_SIG500', 'f4')]
     else:
-        specific_columns = [('NZ_LOP', 'f4'), ('RAN_NUM_0_1_LOP', 'f4')]    
+        specific_columns = []
 
     all_columns = general_columns + add_columns + specific_columns
     
