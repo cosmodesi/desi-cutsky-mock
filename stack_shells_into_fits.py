@@ -10,7 +10,7 @@ from redshift_error_QSO import sample_redshift_error
 
 def count_aux(status_tmp, ra_tmp):
     idx = np.arange(len(status_tmp))
-    mask_Y5 = mask(main=0, nz=0, Y5=0, sv3=0)
+    mask_Y5 = mask(nz=0, Y5=1)
         
     range_NGC = (ra_tmp < 303.25) & (ra_tmp > 84)
     range_SGC = ~range_NGC

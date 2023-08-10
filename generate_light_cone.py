@@ -304,7 +304,7 @@ class LightCone():
 			return_dict = manager.dict()
 			counter = 0
 			for subbox in range(n_subboxes):
-				infile = path_instance.input_file.format(redshift=redshift, snapshot=snapshot, subbox=subbox)
+				infile = path_instance.input_file.format(redshift=redshift, subbox=subbox)
 				prefix = f"[shellnum={shellnum}; subbox={subbox}]: "
 
 				p = mp.Process(target=self.generate_shell, args=(infile, subbox, prefix, chilow, chiupp, return_dict))

@@ -41,7 +41,7 @@ def LC_ABACUS(args, galtype=None):
 
 def cutsky_ABACUS(args, galtype=None, gal_in_name=None, redshift=None, snapshot=None):
 	in_fol_temp = "AbacusSummit_base_c000_ph"
-	config_file = f"./ABACUS/config/config_ABACUS_{galtype}.ini"
+	config_file = f"./ABACUS/config/config_ABACUS_{galtype}_2ND_GEN.ini"
 
 	######### Instances
 	lightcone_instance = LightCone(config_file, args)
@@ -52,7 +52,8 @@ def cutsky_ABACUS(args, galtype=None, gal_in_name=None, redshift=None, snapshot=
 		phase = str(int(i)).zfill(3)
 
 		in_part_path = "{redshift}/" + f"/{in_fol_temp}{phase}/"
-		input_name = gal_in_name + "_snap{snapshot}_ph" + phase + ".gcat.sub{subbox}.fits"
+		# input_name = gal_in_name + "_snap{snapshot}_ph" + phase + ".gcat.sub{subbox}.fits"
+		input_name = gal_in_name + "_real_space.sub{subbox}.fits.gz"
 
 		out_part_path = f"/{redshift}/{in_fol_temp}{phase}/"		
 		output_name = gal_in_name + "_snap{snapshot}_ph" + phase + "_shell_{shellnum}.hdf5"
@@ -213,7 +214,7 @@ def main():
 
 	### EZmocks 6Gpc (Tested)
 	# cutsky_EZmock(args, galtype="LRG", redshift="z0.800", in_fol_temp="EZmock_B6000G1536Z0.8N216424548_b0.385d4r169c0.3_seed", box_size=6)
-	cutsky_EZmock(args, galtype="ELG", redshift="z1.100", in_fol_temp="EZmock_B6000G1536Z1.1N648012690_b0.345d1.45r40c0.05_seed", box_size=6)
+	# cutsky_EZmock(args, galtype="ELG", redshift="z1.100", in_fol_temp="EZmock_B6000G1536Z1.1N648012690_b0.345d1.45r40c0.05_seed", box_size=6)
 	# cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B6000G1536Z1.4N27395172_b0.053d1.13r0c0.6_seed", box_size=6)
 
 	### Random 6Gpc (Not Tested)
@@ -229,7 +230,7 @@ def main():
 
 	### Abacus 2Gpc (Not Tested)
 	# cutsky_ABACUS(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.800", snapshot=20)
-	# cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELGlowDens", redshift="z1.100", snapshot=16)
+	cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELG", redshift="z1.100", snapshot=16)
 	# cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.400", snapshot=12)
 
 	### Abacus 500Mpc

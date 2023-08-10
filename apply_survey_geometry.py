@@ -19,15 +19,15 @@ def bits(ask="try"):
 	if ask == "LC":              return 0  #(0 0 0 0 0 0)
 	if ask == "downsample":      return 1  #(0 0 0 0 0 1)
 	if ask == "Y5foot":          return 2  #(0 0 0 0 1 0)
-	if ask == "SV3foot":         return 4  #(0 0 0 1 0 0)
-	if ask == "downsample_main": return 8  #(0 0 1 0 0 0)
-	if ask == "downsample_LOP":  return 16 #(0 1 0 0 0 0)
+	# if ask == "SV3foot":         return 4  #(0 0 0 1 0 0)
+	# if ask == "downsample_main": return 8  #(0 0 1 0 0 0)
+	if ask == "downsample_LOP":  return 4 #(0 0 0 1 0 0)
 	print(f"You have asked for {ask}. Which does not exist. Please check bits() function in apply_survey_geometry.py.")
 	os._exit(1)
 
 
-def mask(main=0, nz=0, Y5=0, sv3=0):
-	return nz * (2**0) + Y5 * (2**1) + sv3 * (2**2) + main * (2**3)
+def mask(nz=0, Y5=0, nz_lop=0):
+	return nz * (2**0) + Y5 * (2**1) + nz_lop * (2**2) 
 
 
 def apply_footprint(ra, dec, footprint_mask):
@@ -35,16 +35,12 @@ def apply_footprint(ra, dec, footprint_mask):
 
 	bitval = 0
 	# footprint_mask possibilities
-	# 0 - Y5 DESI, 2 - SV3 DESI
+	# 0 - Y5 DESI
 
 	if footprint_mask == 0:
 		tiles = desimodel.io.load_tiles()
 		point = foot.is_point_in_desi(tiles, ra, dec)
 		bitval = bits(ask="Y5foot")
-	elif footprint_mask == 2:
-		tiles = Table.read('/global/cfs/cdirs/desi/survey/ops/surveyops/trunk/ops/tiles-sv3.ecsv')
-		point = foot.is_point_in_desi(tiles, ra, dec)
-		bitval = bits(ask="SV3foot")
 	else:
 		print("ERROR: Wrong footprint.", flush=True)
 		os._exit(1)
@@ -123,17 +119,14 @@ class SurveyGeometry():
 		outbits = []
 
 		if self.galtype == "LRG":
-			newbits     , _ = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample")
-			newbits_main, _ = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample_main")
-			
-			outbits = np.bitwise_or(newbits, newbits_main)
+			outbits     , _ = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample")			
 			ran = [ran_i]
 
 		elif self.galtype == "ELG":
 			newbits, nz         = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample")
 			ran_n               = np.random.rand(len(z_cat))
 			ran_n[newbits == 0] = np.inf
-			newbits_LOP, _      = self.downsample_aux(z_cat, ran_n, nz , ask="downsample_LOP")
+			newbits_LOP, _      = self.downsample_aux(z_cat, ran_n, 1 , ask="downsample_LOP")
 			
 			outbits = np.bitwise_or(newbits, newbits_LOP)
 			ran = [ran_i, ran_n]
@@ -169,23 +162,17 @@ class SurveyGeometry():
 		z_cosmo = data['Z_COSMO'][()]
 
 		foot_bit = apply_footprint(ra, dec, 0)
-		# foot_bit2 = apply_footprint(ra, dec, 2)
-		# foot_bit = np.bitwise_or(foot_bit0, foot_bit2)
-
 		down_bit, ran_arr = self.downsample(z_cosmo, n_mean)
 
 		out_arr = np.bitwise_or(foot_bit, down_bit)
 		out_arr = out_arr.astype(np.int32)
 
 		if "STATUS" in data.keys():
-			# f['galaxy']["STATUS"][:] = out_arr
 			print("WARNING: STATUS EXISTS. New STATUS has not been written.")
 		else:
 			f.create_dataset('galaxy/STATUS', data=out_arr,  dtype=np.int32)
 
 		if "RAN_NUM_0_1" in data.keys():
-			# f['galaxy']["RAN_NUM_0_1"][:] = ran_arr[0]
-			# f.create_dataset('galaxy/RAN_NUM_0_1_LOP', data=ran_arr[1], dtype=np.float32)
 			print("WARNING: RAN_NUM_0_1 EXISTS. New RAN_NUM_0_1 has not been written.")
 		else:
 			f.create_dataset('galaxy/RAN_NUM_0_1', data=ran_arr[0], dtype=np.float32)
