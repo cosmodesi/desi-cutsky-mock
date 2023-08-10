@@ -132,7 +132,7 @@ class SurveyGeometry():
 			ran = [ran_i, ran_n]
 		
 		elif self.galtype == "QSO":	
-			outbits, _, _ = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample")
+			outbits, _ = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample")
 			ran = [ran_i]
 		
 		else:
