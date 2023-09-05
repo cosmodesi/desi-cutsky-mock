@@ -63,10 +63,9 @@ def cutsky_ABACUS(args, galtype=None, gal_in_name=None, redshift=None, snapshot=
 		# lightcone_instance.generate_shells(path_instance, snapshot=snapshot, redshift=redshift, cutsky=True, nproc=20, n_subboxes=64, cat_seed=i)
 
 		# survey_geometry_instance.shell(path_instance, nproc=64, todo=3)
-		survey_geometry_instance.shell_series(path_instance, todo=3)
 		
-		# out_fits = path_instance.dir_out + f"/{redshift}/fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
-		# stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
+		out_fits = path_instance.dir_out + f"/{redshift}/fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
+		stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
 
 
 def cutsky_EZmock(args, galtype=None, redshift=None, in_fol_temp=None, box_size=6):
