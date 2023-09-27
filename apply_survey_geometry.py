@@ -19,74 +19,44 @@ def bits(ask="try"):
     if ask == "LC":              return 0  #(0 0 0 0 0 0)
     if ask == "downsample":      return 1  #(0 0 0 0 0 1)
     if ask == "Y5foot":          return 2  #(0 0 0 0 1 0)
-    # if ask == "SV3foot":         return 4  #(0 0 0 1 0 0)
-    # if ask == "downsample_main": return 8  #(0 0 1 0 0 0)
-    if ask == "downsample_LOP":  return 4 #(0 0 0 1 0 0)
-    if ask == "Y1foot":          return 8
+    if ask == "downsample_LOP":  return 4  #(0 0 0 1 0 0)
+    if ask == "Y1foot":          return 8  #(0 0 1 0 0 0)
     print(f"You have asked for {ask}. Which does not exist. Please check bits() function in apply_survey_geometry.py.")
     os._exit(1)
 
 
 def mask(nz=0, Y5=0, nz_lop=0, Y1=0):
-    return nz * (2**0) + Y5 * (2**1) + nz_lop * (2**2) + Y1 * (2**3)
-
-def mask_test(nz=0, foot='Y1', nz_lop=0):
-    if foot == 'Y1':
-        Y5 = 0
-        Y1 = 1
-    elif foot == 'Y5':
-        Y5 = 1
-        Y1 = 0
-    return nz * (2**0) + Y5 * (2**1) + nz_lop * (2**2) + Y1 * (2**3)
-
-
-def apply_footprint_y1(ra, dec, footprint_mask):
-    """ apply desi footprint """
-
-    bitval = 0
-    # footprint_mask possibilities
-    # 0 - Y5 DESI
-
-    if footprint_mask == 0:
-        tiles = Table.read('/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/tiles-DARK.fits')    
-    elif footprint_mask == 1:
-        tiles = Table.read('/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/tiles-BRIGHT.fits')
-    elif footprint_mask == 2:
-        tiles_dark = Table.read('/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/tiles-DARK.fits')
-        tiles_bright = Table.read('/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/tiles-BRIGHT.fits')
-        tiles = vstack([tiles_dark, tiles_bright])
-    else:
-        print("ERROR: Wrong footprint.", flush=True)
-        os._exit(1)
-
-    bitval = bits(ask="Y1foot")
-    point = foot.is_point_in_desi(tiles, ra, dec)
-    idx   = np.where(point)
-
-    print("FOOTPRINT: Selected {} out of {} galaxies.".format(len(idx[0]), len(ra)), flush=True)
-
-    newbits = np.zeros(len(ra), dtype=np.int32)
-    newbits[idx] = bitval
-
-    return newbits
+    return nz * (2**0) + Y5 * (2**1) + nz_lop * (2**2) + Y1 * (2**3) 
 
 
 def apply_footprint(ra, dec, footprint_mask):
-    """ apply desi footprint """
+    """ apply desi ootprint """
 
     bitval = 0
     # footprint_mask possibilities
-    # 0 - Y5 DESI
+    # 0 - Y5 DESI; 1, 2, 3 - Y1 DESI
 
     if footprint_mask == 0:
-        tiles = Table.read('/global/cfs/cdirs/desi/survey/ops/surveyops/trunk/ops/tiles-main.ecsv')
+        tiles_0 = Table.read('/global/cfs/cdirs/desi/survey/ops/surveyops/trunk/ops/tiles-main.ecsv')
         mask_y5 = (tiles['PROGRAM'] != 'BACKUP')
-        point = foot.is_point_in_desi(tiles[mask_y5], ra, dec)
+        tiles = tiles_0[mask_y5]
         bitval = bits(ask="Y5foot")
+    elif footprint_mask == 1:
+        tiles = Table.read('/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/tiles-DARK.fits')
+        bitval = bits(ask="Y1foot")
+    elif footprint_mask == 2:
+        tiles = Table.read('/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/tiles-BRIGHT.fits')
+        bitval = bits(ask="Y1foot")
+    elif footprint_mask == 3:
+        tiles_dark = Table.read('/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/tiles-DARK.fits')
+        tiles_bright = Table.read('/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/tiles-BRIGHT.fits')
+        tiles = vstack([tiles_dark, tiles_bright])
+        bitval = bits(ask="Y1foot")
     else:
         print("ERROR: Wrong footprint.", flush=True)
         os._exit(1)
 
+    point = foot.is_point_in_desi(tiles, ra, dec)
     idx   = np.where(point)
 
     print("FOOTPRINT: Selected {} out of {} galaxies.".format(len(idx[0]), len(ra)), flush=True)
@@ -153,7 +123,7 @@ class SurveyGeometry():
         newbits = np.zeros(len(z_cat), dtype=np.int32)
         newbits[idx] = bitval
         return newbits, nz
-
+        
     def downsample(self, z_cat, n_mean):
         """ downsample galaxies following n(z) model specified in galtype"""
 
@@ -169,20 +139,20 @@ class SurveyGeometry():
             ran_n               = np.random.rand(len(z_cat))
             ran_n[newbits == 0] = np.inf
             newbits_LOP, _      = self.downsample_aux(z_cat, ran_n, 1 , ask="downsample_LOP")
-
+            
             outbits = np.bitwise_or(newbits, newbits_LOP)
             ran = [ran_i, ran_n]
-
+        
         elif self.galtype == "QSO":	
             outbits, _ = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample")
             ran = [ran_i]
-
+        
         else:
             print("Wrong galaxy type.")
             os._exit(1)
 
         return outbits, ran
-
+        
 
     def generate_shell(self, args):
         infile, footprint_mask, todo = args
@@ -203,11 +173,11 @@ class SurveyGeometry():
         dec = data['DEC'][()]
         z_cosmo = data['Z_COSMO'][()]
 
-        foot_bit = apply_footprint(ra, dec, 0)
-        foot_bit_y1 = apply_footprint_y1(ra, dec, 0)
+        foot_bit_0 = apply_footprint(ra, dec, 0)
+        foot_bit_1 = apply_footprint(ra, dec, 1)
         down_bit, ran_arr = self.downsample(z_cosmo, n_mean)
 
-        out_arr = np.bitwise_or(np.bitwise_or(foot_bit, foot_bit_y1), down_bit)
+        out_arr = np.bitwise_or(np.bitwise_or(foot_bit_0, foot_bit_1), down_bit)
         out_arr = out_arr.astype(np.int32)
 
         if "STATUS" in data.keys():
@@ -242,7 +212,7 @@ class SurveyGeometry():
     def shell_series(self, path_instance, footprint_mask=0, todo=1):
 
         infiles = glob.glob(path_instance.shells_out_path + "/*.hdf5")
-        print(path_instance.shells_out_path, infiles)
+        print(infiles)
         for file_ in infiles:
             args = [file_, footprint_mask, todo]
             # args = [infiles[1], footprint_mask, todo]

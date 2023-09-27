@@ -62,7 +62,7 @@ Most of them, however, should be given in the configuration file. Examples of co
 
 ## Contributors
 
-I thank [Dr. Shadab Alam](https://github.com/shadaba) for his support and suggestions. 
+I thank [Dr. Shadab Alam](https://github.com/shadaba) and [Dr. Aurelio Carnero Rosell](https://github.com/aureliocarnero) for their support and suggestions. 
 
 ## Acknowledgements
 This code is inspired by [prcaetano's](https://github.com/prcaetano/gallightcone) and [Dr. Chia-Hsun Chuang's](https://github.com/chia-hsun-chuang/apply_desifootprint_nz) packages.
