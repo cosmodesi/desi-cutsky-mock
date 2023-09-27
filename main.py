@@ -41,10 +41,10 @@ def LC_ABACUS(args, galtype=None):
 
 def cutsky_ABACUS(args, galtype=None, gal_in_name=None, redshift=None, snapshot=None):
 	in_fol_temp = "AbacusSummit_base_c000_ph"
-	config_file = f"./ABACUS/config/config_ABACUS_{galtype}.ini"
+	config_file = f"./ABACUS/config/config_ABACUS_{galtype}_2ND_GEN.ini"
 
 	######### Instances
-	lightcone_instance = LightCone(config_file, args)
+	# lightcone_instance = LightCone(config_file, args)
 	survey_geometry_instance = SurveyGeometry(config_file, args, galtype=galtype)
 
 	# ######### CutSky
@@ -52,16 +52,17 @@ def cutsky_ABACUS(args, galtype=None, gal_in_name=None, redshift=None, snapshot=
 		phase = str(int(i)).zfill(3)
 
 		in_part_path = "{redshift}/" + f"/{in_fol_temp}{phase}/"
-		input_name = gal_in_name + "_snap{snapshot}_ph" + phase + ".gcat.sub{subbox}.fits"
+		# input_name = gal_in_name + "_snap{snapshot}_ph" + phase + ".gcat.sub{subbox}.fits"
+		input_name = gal_in_name + "_real_space.sub{subbox}.fits.gz"
 
 		out_part_path = f"/{redshift}/{in_fol_temp}{phase}/"		
 		output_name = gal_in_name + "_snap{snapshot}_ph" + phase + "_shell_{shellnum}.hdf5"
 
 		path_instance = Paths(config_file, args, in_part_path, input_name, out_part_path, output_name)
 
-		lightcone_instance.generate_shells(path_instance, snapshot=snapshot, redshift=redshift, cutsky=True, nproc=20, n_subboxes=64, cat_seed=i)
+		# lightcone_instance.generate_shells(path_instance, snapshot=snapshot, redshift=redshift, cutsky=True, nproc=20, n_subboxes=64, cat_seed=i)
 
-		survey_geometry_instance.shell(path_instance, nproc=64, todo=3)
+		# survey_geometry_instance.shell(path_instance, nproc=64, todo=3)
 		
 		out_fits = path_instance.dir_out + f"/{redshift}/fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
 		stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
@@ -69,7 +70,7 @@ def cutsky_ABACUS(args, galtype=None, gal_in_name=None, redshift=None, snapshot=
 
 def cutsky_EZmock(args, galtype=None, redshift=None, in_fol_temp=None, box_size=6):
 	if box_size == 6:
-		config_file = f"./EZmock/config/config_EZmock_{galtype}_6Gpc.ini"
+		config_file = f"./EZmock/config/config_EZmock_{galtype}_6Gpc_2ND_GEN.ini"
 	else:
 		config_file = f"./EZmock/config/config_EZmock_{galtype}.ini"
 
@@ -94,8 +95,10 @@ def cutsky_EZmock(args, galtype=None, redshift=None, in_fol_temp=None, box_size=
 		if box_size == 6:
 			# lightcone_instance.generate_shells(path_instance, snapshot="", redshift=redshift, cutsky=True, nproc=16, n_subboxes=216, cat_seed=i)
 			# survey_geometry_instance.shell(path_instance, nproc=64)
+			# survey_geometry_instance.shell_series(path_instance)
 			out_fits = path_instance.dir_out + redshift + "/cutsky_" + galtype + "_" + redshift + "_" + in_fol_temp + "{phase}"
-			stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="NGC_SGC", seed=i, max_seed=2000)
+			# stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="NGC_SGC", seed=i, max_seed=2000)
+			stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
 		
 		else:
 			# lightcone_instance.generate_shells(path_instance, snapshot="", redshift=redshift, cutsky=True, nproc=16, n_subboxes=64, cat_seed=i)
@@ -225,14 +228,14 @@ def main():
 	# cutsky_EZmock(args, galtype="QSO", redshift="z1.400", in_fol_temp="EZmock_B2000G512Z1.4N1014636_b0.053d1.13r0c0.6_seed", box_size=2)
 	
 
-	### Abacus 2Gpc (Not Tested)
+	### Abacus 2Gpc
 	# cutsky_ABACUS(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.800", snapshot=20)
-	# cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELGlowDens", redshift="z1.100", snapshot=16)
-	# cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.400", snapshot=12)
+	# cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELG",        redshift="z1.100", snapshot=16)
+	cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.400", snapshot=12)
 
 	### Abacus 500Mpc
 	# cutsky_small_ABACUS(args, galtype="LRG", gal_in_name="LRG", redshift="z0.800", snapshot=20)
-	cutsky_random_small_ABACUS(args, galtype="LRG", gal_in_name="LRG", redshift="", snapshot="")
+	# cutsky_random_small_ABACUS(args, galtype="LRG", gal_in_name="LRG", redshift="", snapshot="")
 	# cutsky_small_ABACUS(args, galtype="ELG", gal_in_name="ELGlowDens", redshift="z1.100", snapshot=16)
 	# cutsky_small_ABACUS(args, galtype="QSO", gal_in_name="QSO", redshift="z1.400", snapshot=12)
 

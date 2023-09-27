@@ -20,7 +20,7 @@ class RotationMatrix():
         else:
             self.rotation_matrix = None
             print("ERROR: wrong chosen galactic cap")
-            sys.exit()
+            os._exit(1)
 
     def ngc_matrix(self):
         print("INFO: Using the Rotation matrix for NGC")
