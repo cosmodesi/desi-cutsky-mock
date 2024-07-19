@@ -11,8 +11,8 @@ from redshift_error_QSO import sample_redshift_error
 def count_aux(status_tmp, ra_tmp):
     idx = np.arange(len(status_tmp))
     mask_Y5 = mask(nz=0, Y5=1)
-        
-    range_NGC = (ra_tmp < 303.25) & (ra_tmp > 84)
+
+    range_NGC = (ra_tmp < 303.25) & (ra_tmp > 90)
     range_SGC = ~range_NGC
 
     idx_Y5_TOT = idx[ ((status_tmp & (mask_Y5)) == mask_Y5) ]
@@ -43,6 +43,34 @@ def count(files):
         f.close()
     return counter_TOT, counter_NGC, counter_SGC
 
+def fill_array_ns(output_data_array, input_data_array, columns, idx, index_i, n_mean, survey_geometry_instance):
+    z_cosmo_tmp = input_data_array["Z_COSMO"][()]
+    size_ = len(z_cosmo_tmp[idx])
+
+    if "Z_RSD" in input_data_array.keys():
+        z_rsd_tmp   = input_data_array["Z_RSD"][()]
+
+    index_f = size_ + index_i
+
+    for col, type_ in columns:
+        if col == "NZ":
+            output_data_array["NZ"][index_i: index_f]      = np.mean(survey_geometry_instance.get_nz(z_cosmo_tmp[idx], ask="downsample", ns='yes'), axis=0)
+        elif col == "NZ_LOP":
+            output_data_array["NZ_LOP"][index_i: index_f] = survey_geometry_instance.get_nz(z_cosmo_tmp[idx], ask="downsample_LOP")
+        elif col == "RAW_NZ":
+            output_data_array["RAW_NZ"][index_i: index_f] = np.ones(len(z_cosmo_tmp[idx])) * n_mean
+        elif col == "Z_ERR_3GAUSS":
+            output_data_array["Z_ERR_3GAUSS"][index_i: index_f] = sample_redshift_error(z_rsd_tmp[idx], error_model='3gauss')
+        elif col == "Z_ERR_SIG500":
+            output_data_array["Z_ERR_SIG500"][index_i: index_f] = sample_redshift_error(z_rsd_tmp[idx], error_model='sig500')
+        elif col == "Z":
+            output_data_array["Z"][index_i: index_f] = z_rsd_tmp[idx]
+        else:
+            array_col = input_data_array[col][()]
+            output_data_array[col][index_i: index_f] = array_col[idx]
+
+    return index_f
+
 
 def fill_array(output_data_array, input_data_array, columns, idx, index_i, n_mean, survey_geometry_instance):
     z_cosmo_tmp = input_data_array["Z_COSMO"][()]
@@ -50,7 +78,7 @@ def fill_array(output_data_array, input_data_array, columns, idx, index_i, n_mea
 
     if "Z_RSD" in input_data_array.keys():
         z_rsd_tmp   = input_data_array["Z_RSD"][()]
-    
+
     index_f = size_ + index_i
 
     for col, type_ in columns:
@@ -81,7 +109,10 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
     counter_TOT, counter_NGC, counter_SGC = count(files)
     print(f"The number of tracers: TOT={counter_TOT}; NGC={counter_NGC}; SGC={counter_SGC}")
 
-    general_columns = [('RA', 'f4'), ('DEC', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4'), ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
+    general_columns = [('RA', 'f4'), ('DEC', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4')]#, ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
+
+    if mock_random_ic != "ic":
+        general_columns += [('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
 
     if mock_random_ic == "mock":
         add_columns = [('Z', 'f4')]
@@ -98,7 +129,7 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
         specific_columns = []
 
     all_columns = general_columns + add_columns + specific_columns
-    
+
     if ngc_sgc_tot == "TOT":
         data_fits_TOT = np.zeros(counter_TOT, dtype=all_columns)
         index_i_TOT = 0
@@ -106,7 +137,7 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
     elif ngc_sgc_tot == "NGC_SGC":
         data_fits_NGC = np.zeros(counter_NGC, dtype=all_columns)
         index_i_NGC = 0
-        
+
         data_fits_SGC = np.zeros(counter_SGC, dtype=all_columns)
         index_i_SGC = 0
     else:
@@ -122,13 +153,22 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
         status_tmp  = data['STATUS'][()]
 
         idx_Y5_TOT, idx_Y5_NGC, idx_Y5_SGC = count_aux(status_tmp, ra_tmp)
+        if survey_geometry_instance.galtype == "ELG":
+            if ngc_sgc_tot == "TOT":
+                index_i_TOT = fill_array_ns(data_fits_TOT, data, all_columns, idx_Y5_TOT, index_i_TOT, n_mean, survey_geometry_instance)
 
-        if ngc_sgc_tot == "TOT":
-            index_i_TOT = fill_array(data_fits_TOT, data, all_columns, idx_Y5_TOT, index_i_TOT, n_mean, survey_geometry_instance)
+            elif ngc_sgc_tot == "NGC_SGC":
+                index_i_NGC = fill_array_ns(data_fits_NGC, data, all_columns, idx_Y5_NGC, index_i_NGC, n_mean, survey_geometry_instance)
+                index_i_SGC = fill_array_ns(data_fits_SGC, data, all_columns, idx_Y5_SGC, index_i_SGC, n_mean, survey_geometry_instance)
 
-        elif ngc_sgc_tot == "NGC_SGC":
-            index_i_NGC = fill_array(data_fits_NGC, data, all_columns, idx_Y5_NGC, index_i_NGC, n_mean, survey_geometry_instance)
-            index_i_SGC = fill_array(data_fits_SGC, data, all_columns, idx_Y5_SGC, index_i_SGC, n_mean, survey_geometry_instance)
+
+        else:
+            if ngc_sgc_tot == "TOT":
+                index_i_TOT = fill_array(data_fits_TOT, data, all_columns, idx_Y5_TOT, index_i_TOT, n_mean, survey_geometry_instance)
+
+            elif ngc_sgc_tot == "NGC_SGC":
+                index_i_NGC = fill_array(data_fits_NGC, data, all_columns, idx_Y5_NGC, index_i_NGC, n_mean, survey_geometry_instance)
+                index_i_SGC = fill_array(data_fits_SGC, data, all_columns, idx_Y5_SGC, index_i_SGC, n_mean, survey_geometry_instance)
 
 
         f.close()

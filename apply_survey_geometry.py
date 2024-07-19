@@ -21,12 +21,13 @@ def bits(ask="try"):
     if ask == "Y5foot":          return 2  #(0 0 0 0 1 0)
     if ask == "downsample_LOP":  return 4  #(0 0 0 1 0 0)
     if ask == "Y1foot":          return 8  #(0 0 1 0 0 0)
+    if ask == "Y1footbright":    return 16  #(0 1 0 0 0 0)
     print(f"You have asked for {ask}. Which does not exist. Please check bits() function in apply_survey_geometry.py.")
     os._exit(1)
 
 
-def mask(nz=0, Y5=0, nz_lop=0, Y1=0):
-    return nz * (2**0) + Y5 * (2**1) + nz_lop * (2**2) + Y1 * (2**3) 
+def mask(nz=0, Y5=0, nz_lop=0, Y1=0, Y1BRIGHT=0):
+    return nz * (2**0) + Y5 * (2**1) + nz_lop * (2**2) + Y1 * (2**3) + Y1BRIGHT * (2**4) 
 
 
 def apply_footprint(ra, dec, footprint_mask):
@@ -37,9 +38,9 @@ def apply_footprint(ra, dec, footprint_mask):
     # 0 - Y5 DESI; 1, 2, 3 - Y1 DESI
 
     if footprint_mask == 0:
-        tiles_0 = Table.read('/global/cfs/cdirs/desi/survey/ops/surveyops/trunk/ops/tiles-main.ecsv')
+        tiles = Table.read('/global/cfs/cdirs/desi/survey/ops/surveyops/trunk/ops/tiles-main.ecsv')
         mask_y5 = (tiles['PROGRAM'] != 'BACKUP')
-        tiles = tiles_0[mask_y5]
+        tiles = tiles[mask_y5]
         bitval = bits(ask="Y5foot")
     elif footprint_mask == 1:
         tiles = Table.read('/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/tiles-DARK.fits')
@@ -66,6 +67,21 @@ def apply_footprint(ra, dec, footprint_mask):
 
     return newbits
 
+def return_north(ra, dec):
+    '''
+    given a table that already includes RA,DEC, add PHOTSYS column denoting whether
+    the data is in the DECaLS ('S') or BASS/MzLS ('N') photometric region
+    '''
+    from astropy.coordinates import SkyCoord
+    import astropy.units as u
+    c = SkyCoord(ra* u.deg, dec* u.deg,frame='icrs')
+    gc = c.transform_to('galactic')
+    sel_ngc = gc.b > 0
+
+    seln = dec > 32.375
+
+    sel = seln&sel_ngc
+    return sel
 
 class SurveyGeometry():
     def __init__(self, config_file, args, galtype=None):
@@ -81,31 +97,80 @@ class SurveyGeometry():
 
         self.tracer_id = 0
 
-        if galtype in ("LRG", "LRG_main"):
-            self.tracer_id = 0
-        elif galtype == "ELG":
-            self.tracer_id = 1
-        elif galtype == "QSO":
-            self.tracer_id = 2
+        self.mock_random_ic = args.mock_random_ic
+        if self.mock_random_ic is None:
+            self.mock_random_ic = config.get('sim', 'mock_random_ic')
+
+        if self.mock_random_ic != "ic":
+            if galtype in ("LRG", "LRG_main"):
+                self.tracer_id = 0
+            elif galtype == "ELG":
+                self.tracer_id = 1
+            elif galtype == "QSO":
+                self.tracer_id = 2
 
         print(f"INFO: {self.galtype} with {self.tracer_id} ID")
 
 
-    def get_nz(self, z_cat, ask=None):
+    def get_nz(self, z_cat, ask=None, ns=None):
         ''' The function where the n(z) is read
         and the NZ column is computed for the given
         redshifts.
         '''
         config = self.config
-        z, nz = np.loadtxt(config["nz"][ask], usecols=(config.getint("nz", "col_z"), config.getint("nz", "col_nz")), unpack=True)
+        if ns is None:
+            z, nz = np.loadtxt(config["nz"][ask], usecols=(config.getint("nz", "col_z"), config.getint("nz", "col_nz")), unpack=True)
 
-        z_n = z
-        nz_n = (nz / ( 1 - config.getfloat('failurerate', ask) )) * 1.0
+            z_n = z
+            nz_n = (nz / ( 1 - config.getfloat('failurerate', ask) )) * 1.0
 
-        np.savetxt(config["nz"][ask + "_red_cor"], np.array([z_n, nz_n]).T)
+            np.savetxt(config["nz"][ask + "_red_cor"], np.array([z_n, nz_n]).T)
 
-        return np.interp(z_cat, z_n, nz_n, left=0, right=0)
+            return np.interp(z_cat, z_n, nz_n, left=0, right=0)
+        else:
+            ask = 'downsample_n'
+            z, nz = np.loadtxt(config["nz"][ask], usecols=(config.getint("nz", "col_z"), config.getint("nz", "col_nz")), unpack=True)
 
+            z_n = z
+            nz_n = (nz / ( 1 - config.getfloat('failurerate', 'downsample') )) * 1.0
+
+            np.savetxt(config["nz"][ask + "_red_cor"], np.array([z_n, nz_n]).T)
+            north_interp = np.interp(z_cat, z_n, nz_n, left=0, right=0)
+            ask = 'downsample_s'
+            z, nz = np.loadtxt(config["nz"][ask], usecols=(config.getint("nz", "col_z"), config.getint("nz", "col_nz")), unpack=True)
+
+            z_n = z
+            nz_n = (nz / ( 1 - config.getfloat('failurerate', 'downsample') )) * 1.0
+
+            np.savetxt(config["nz"][ask + "_red_cor"], np.array([z_n, nz_n]).T)
+            south_interp = np.interp(z_cat, z_n, nz_n, left=0, right=0)
+            return north_interp,south_interp
+
+
+    def downsample_aux_NS(self, z_cat, ran, n_mean, radec, ask=None):
+        """ downsample galaxies following n(z) model specified in galtype"""
+
+        nz_N, nz_S = self.get_nz(z_cat, ask=ask, ns='yes')
+        ra = radec[0]
+        dec = radec[1]
+
+        is_north = return_north(ra, dec)
+        is_south = ~return_north(ra, dec)
+
+        # downsample
+        nz_selected_n = (ran < nz_N / n_mean) & is_north
+        nz_selected_s = (ran < nz_S / n_mean) & is_south
+#        n_N = nz_N / n_mean		
+#        n_S = nz_S / n_mean		
+        idx = np.where(nz_selected_n|nz_selected_s)
+
+        print("DOWNSAMPLE: Selected {} out of {} galaxies.".format(len(idx[0]), len(z_cat)), flush=True)
+
+        bitval = bits(ask=ask)
+
+        newbits = np.zeros(len(z_cat), dtype=np.int32)
+        newbits[idx] = bitval
+        return newbits, nz_N, nz_S
 
     def downsample_aux(self, z_cat, ran, n_mean, ask=None):
         """ downsample galaxies following n(z) model specified in galtype"""
@@ -123,8 +188,8 @@ class SurveyGeometry():
         newbits = np.zeros(len(z_cat), dtype=np.int32)
         newbits[idx] = bitval
         return newbits, nz
-        
-    def downsample(self, z_cat, n_mean):
+
+    def downsample(self, z_cat, n_mean, radec=None):
         """ downsample galaxies following n(z) model specified in galtype"""
 
         ran_i     = np.random.rand(len(z_cat))
@@ -135,24 +200,24 @@ class SurveyGeometry():
             ran = [ran_i]
 
         elif self.galtype == "ELG":
-            newbits, nz         = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample")
+            newbits, nz_N, nz_S         = self.downsample_aux_NS(z_cat, ran_i, n_mean, radec, ask="downsample")
             ran_n               = np.random.rand(len(z_cat))
             ran_n[newbits == 0] = np.inf
             newbits_LOP, _      = self.downsample_aux(z_cat, ran_n, 1 , ask="downsample_LOP")
-            
+
             outbits = np.bitwise_or(newbits, newbits_LOP)
             ran = [ran_i, ran_n]
-        
+
         elif self.galtype == "QSO":	
             outbits, _ = self.downsample_aux(z_cat, ran_i, n_mean, ask="downsample")
             ran = [ran_i]
-        
+
         else:
             print("Wrong galaxy type.")
             os._exit(1)
 
         return outbits, ran
-        
+
 
     def generate_shell(self, args):
         infile, footprint_mask, todo = args
@@ -160,7 +225,6 @@ class SurveyGeometry():
 
         f = h5py.File(infile, 'r+')
         n_mean = f.attrs["NGAL"] / (f.attrs["BOX_LENGTH"]**3)
-
         shellnum = f.attrs["SHELLNUM"]
         cat_seed = f.attrs["CAT_SEED"]
 
@@ -171,27 +235,32 @@ class SurveyGeometry():
         data = f['galaxy']
         ra = data['RA'][()]
         dec = data['DEC'][()]
-        z_cosmo = data['Z_COSMO'][()]
-
+        z_cosmo = data['Z_RSD'][()]
+        ##TEMPz_cosmo = data['Z_COSMO'][()]
         foot_bit_0 = apply_footprint(ra, dec, 0)
         foot_bit_1 = apply_footprint(ra, dec, 1)
-        down_bit, ran_arr = self.downsample(z_cosmo, n_mean)
 
-        out_arr = np.bitwise_or(np.bitwise_or(foot_bit_0, foot_bit_1), down_bit)
+        if self.mock_random_ic != "ic":
+            down_bit, ran_arr = self.downsample(z_cosmo, n_mean, radec=[ra, dec])
+
+            out_arr = np.bitwise_or(np.bitwise_or(foot_bit_0, foot_bit_1), down_bit)
+        else:
+            foot_bit_2 = apply_footprint(ra, dec, 2)
+            out_arr = np.bitwise_or(np.bitwise_or(foot_bit_0, foot_bit_1), foot_bit_2)
+
         out_arr = out_arr.astype(np.int32)
-
         if "STATUS" in data.keys():
             print("WARNING: STATUS EXISTS. New STATUS has not been written.")
         else:
             f.create_dataset('galaxy/STATUS', data=out_arr,  dtype=np.int32)
 
-        if "RAN_NUM_0_1" in data.keys():
-            print("WARNING: RAN_NUM_0_1 EXISTS. New RAN_NUM_0_1 has not been written.")
-        else:
-            f.create_dataset('galaxy/RAN_NUM_0_1', data=ran_arr[0], dtype=np.float32)
-            if self.galtype == "ELG":
-                f.create_dataset('galaxy/RAN_NUM_0_1_LOP', data=ran_arr[1], dtype=np.float32)
-
+        if self.mock_random_ic != "ic":
+            if "RAN_NUM_0_1" in data.keys():
+                print("WARNING: RAN_NUM_0_1 EXISTS. New RAN_NUM_0_1 has not been written.")
+            else:
+                f.create_dataset('galaxy/RAN_NUM_0_1', data=ran_arr[0], dtype=np.float32)
+                if self.galtype == "ELG":
+                    f.create_dataset('galaxy/RAN_NUM_0_1_LOP', data=ran_arr[1], dtype=np.float32)
         f.close()
 
     def shell(self, path_instance, nproc=5, footprint_mask=0, todo=1):
