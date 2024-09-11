@@ -10,32 +10,6 @@ from apply_survey_geometry import SurveyGeometry
 
 from stack_shells_into_fits import stack_shells
 
-def LC_ABACUS(args, galtype=None):
-    in_fol_temp = "AbacusSummit_base_c000_ph"
-    config_file = f"./ABACUS/config/config_ABACUS_{galtype}.ini"
-
-    ######### Instances
-    # lightcone_instance = LightCone(config_file, args)
-    survey_geometry_instance = SurveyGeometry(config_file, args, galtype=galtype)
-
-    ######### LightCone
-    # for i in range(25):
-    i = args.phase
-    phase = str(int(i)).zfill(3)
-    in_part_path = "/{redshift}/" + f"/{in_fol_temp}{phase}/"
-    input_name = galtype + "_snap{snapshot}_ph" + phase + ".gcat.sub{subbox}.fits"
-
-    out_part_path = "/LightCone/" + f"/{in_fol_temp}{phase}/"
-    output_name = galtype + "_snap{snapshot}_ph" + phase + "_shell_{shellnum}.hdf5"
-
-    path_instance = Paths(config_file, args, in_part_path, input_name, out_part_path, output_name)
-
-    # lightcone_instance.generate_shells(path_instance, cutsky=False, nproc=20, n_subboxes=64, cat_seed=i)
-    # survey_geometry_instance.shell(path_instance, nproc=64, todo=3)
-    # survey_geometry_instance.shell_series(path_instance, todo=3)
-
-    out_fits = path_instance.dir_out + f"/LightCone/{galtype}_LC_AbacusSummit_base_c000_ph{phase}.fits"
-    stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT")
 
 def cutsky_ic_ABACUS(args, galtype=None, redshift=None, snapshot=None):
     in_fol_temp = "AbacusSummit_base_c000_ph"
@@ -70,32 +44,38 @@ def cutsky_ic_ABACUS(args, galtype=None, redshift=None, snapshot=None):
         stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
 
 def cutsky_ABACUS(args, galtype=None, gal_in_name=None, redshift=None, snapshot=None):
-    in_fol_temp = "AbacusSummit_base_c000_ph"
-    config_file = f"./ABACUS/config/config_ABACUS_{galtype}_2ND_GEN.ini"
+    #in_fol_temp = "AbacusSummit_base_c000_ph"
+    config_file = f"./ABACUS/config/config_ABACUS_{galtype}_3RD_GEN.ini"
 
     ######### Instances
     lightcone_instance = LightCone(config_file, args)
     survey_geometry_instance = SurveyGeometry(config_file, args, galtype=galtype)
 
+    rsdgals = False
     # ######### CutSky
-    for i in range(1, 2):
+    for i in range(0, 1):
         phase = str(int(i)).zfill(3)
-
-        in_part_path = "{redshift}/" + f"/{in_fol_temp}{phase}/"
+        if rsdgals:
+            in_part_path = "{redshift}/galaxies_rsd/" #+ f"/{in_fol_temp}{phase}/"
+        else:
+##            in_part_path = "{redshift}/galaxies/" #+ f"/{in_fol_temp}{phase}/"
+            in_part_path = "{redshift}/" #+ f"/{in_fol_temp}{phase}/"
         # input_name = gal_in_name + "_snap{snapshot}_ph" + phase + ".gcat.sub{subbox}.fits"
-        input_name = gal_in_name + "_real_space.sub{subbox}.fits.gz"
+        input_name = "targs_SB{subbox}.fits"
 
-        out_part_path = f"/{redshift}/{in_fol_temp}{phase}/"		
+        out_part_path = f"/{redshift}/{phase}/"		
         output_name = gal_in_name + "_snap{snapshot}_ph" + phase + "_shell_{shellnum}.hdf5"
 
         path_instance = Paths(config_file, args, in_part_path, input_name, out_part_path, output_name)
 
-        lightcone_instance.generate_shells(path_instance, snapshot=snapshot, redshift=redshift, cutsky=True, nproc=20, n_subboxes=64, cat_seed=i)
+        lightcone_instance.generate_shells(path_instance, snapshot=snapshot, redshift=redshift, cutsky=True, nproc=8, n_subboxes=64, cat_seed=i)
 
-        survey_geometry_instance.shell(path_instance, nproc=32, todo=3)
-        ##survey_geometry_instance.shell_series(path_instance, todo=3)
-
-        out_fits = path_instance.dir_out + f"/{redshift}/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
+        survey_geometry_instance.shell(path_instance, nproc=8, todo=3)
+        #survey_geometry_instance.shell_series(path_instance, todo=3)
+        if rsdgals:
+            out_fits = path_instance.dir_out + f"/{redshift}/cutsky_{galtype}_{redshift}_{phase}_withrsd.fits"
+        else:
+            out_fits = path_instance.dir_out + f"/{redshift}/cutsky_{galtype}_{redshift}_{phase}.fits"
         #out_fits = path_instance.dir_out + f"/{redshift}/fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
         stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
 
@@ -298,7 +278,7 @@ def main():
 
     ### Abacus 2Gpc
     cutsky_ABACUS(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.500", snapshot=20)
-#    cutsky_ABACUS(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.800", snapshot=20)
+    cutsky_ABACUS(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.800", snapshot=20)
 #    cutsky_ABACUS(args, galtype="LRG", gal_in_name="LRG",        redshift="z1.100", snapshot=20)
 #    cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELG",        redshift="z0.950", snapshot=16)
 #    cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELG",        redshift="z1.100", snapshot=16)

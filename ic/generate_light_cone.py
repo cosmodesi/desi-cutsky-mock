@@ -158,6 +158,7 @@ class LightCone():
             id_ = data["id"]
         elif self.mock_random_ic == "ic":
             dens = data["density"]
+            id_halo = data["ID_mesh"]
         else:
             print(f"ERROR!!! generate_lc, convert_xyz2rdz: You should choose between: mock, random or ic. You have chosen {self.mock_random_ic}")
 
@@ -234,6 +235,7 @@ class LightCone():
                             tot_aux = np.append(tot_aux, id_[idx])
                         elif self.mock_random_ic == "ic":
                             tot_aux = np.append(tot_aux, dens[idx])
+                            tot_id_halo  = np.append(tot_id_halo, id_halo[idx])
 
                         tht, phi = hp.vec2ang(np.c_[ux, uy, uz])
                         ra, dec  = tp2rd(tht, phi)
@@ -256,7 +258,7 @@ class LightCone():
 
     def obtain_data(self, infile, prefix, correct1000=False):
         try:
-            if infile.endswith('.fits'):
+            if infile.endswith('.fits') or infile.endswith('.gz'):
                 print('Reading fits file')
                 hdul = fits.open(infile, memmap=False)
                 data = hdul[1].data
@@ -314,6 +316,7 @@ class LightCone():
 
             # Don't reprocess files already done
             if os.path.isfile(out_file_name):
+                print(f"INFO: DONE FILE {out_file_name}")
                 continue
 
             if self.parallel_BOOL:
@@ -375,7 +378,8 @@ class LightCone():
                 dec0_array[index_i: index_f] = shell_subbox_dict["dec0"]
                 zz0_array[index_i: index_f]  = shell_subbox_dict["zz0"]
                 aux0_array[index_i: index_f] = shell_subbox_dict["aux0"]
-                mass0_array[index_i: index_f] = shell_subbox_dict["mass0"]
+                if self.mock_random_ic == "mock":
+                    mass0_array[index_i: index_f] = shell_subbox_dict["mass0"]
                 id_halo0_array[index_i: index_f] = shell_subbox_dict["id_halo0"]
 
                 index_i = index_f
@@ -396,10 +400,11 @@ class LightCone():
                     out_file.create_dataset('galaxy/ID',      data=aux0_array, dtype=np.int32)
                 elif self.mock_random_ic == "ic":
                     out_file.create_dataset('galaxy/ONEplusDELTA', data=1 + aux0_array, dtype=np.float32)
+                    out_file.create_dataset('galaxy/ID',      data=id_halo0_array, dtype=np.int64)
 
                 out_file.attrs['NGAL']     = counter_ngal
                 out_file.attrs['SHELLNUM'] = shellnum
-                out_file.attrs['SNAPSHOT'] = snapshot
+#                out_file.attrs['SNAPSHOT'] = snapshot
                 out_file.attrs['CAT_SEED'] = cat_seed
                 out_file.attrs['BOX_LENGTH'] = self.box_length
 
