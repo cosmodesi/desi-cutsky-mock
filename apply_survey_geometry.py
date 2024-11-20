@@ -39,7 +39,7 @@ def apply_footprint(ra, dec, footprint_mask):
 
     if footprint_mask == 0:
         tiles = Table.read('/global/cfs/cdirs/desi/survey/ops/surveyops/trunk/ops/tiles-main.ecsv')
-        mask_y5 = (tiles['PROGRAM'] != 'BACKUP')
+        mask_y5 = (tiles['PROGRAM'] != 'BACKUP')&(tiles['IN_DESI'])
         tiles = tiles[mask_y5]
         bitval = bits(ask="Y5foot")
     elif footprint_mask == 1:
