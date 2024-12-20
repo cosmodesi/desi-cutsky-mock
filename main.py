@@ -78,7 +78,7 @@ def cutsky_ABACUS(args, galtype=None, gal_in_name=None, redshift=None, snapshot=
     survey_geometry_instance = SurveyGeometry(config_file, args, galtype=galtype)
 
     # ######### CutSky
-    for i in range(1, 2):
+    for i in range(2, 25):
         phase = str(int(i)).zfill(3)
 
         in_part_path = "{redshift}/" + f"/{in_fol_temp}{phase}/"
@@ -90,9 +90,9 @@ def cutsky_ABACUS(args, galtype=None, gal_in_name=None, redshift=None, snapshot=
 
         path_instance = Paths(config_file, args, in_part_path, input_name, out_part_path, output_name)
 
-        lightcone_instance.generate_shells(path_instance, snapshot=snapshot, redshift=redshift, cutsky=True, nproc=20, n_subboxes=64, cat_seed=i)
+        lightcone_instance.generate_shells(path_instance, snapshot=snapshot, redshift=redshift, cutsky=True, nproc=6, n_subboxes=64, cat_seed=i)
 
-        survey_geometry_instance.shell(path_instance, nproc=32, todo=3)
+        survey_geometry_instance.shell(path_instance, nproc=6, todo=3)
         ##survey_geometry_instance.shell_series(path_instance, todo=3)
 
         out_fits = path_instance.dir_out + f"/{redshift}/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
@@ -297,15 +297,15 @@ def main():
 
 
     ### Abacus 2Gpc
-    cutsky_ABACUS(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.500", snapshot=20)
+#    cutsky_ABACUS(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.500", snapshot=20)
 #    cutsky_ABACUS(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.800", snapshot=20)
 #    cutsky_ABACUS(args, galtype="LRG", gal_in_name="LRG",        redshift="z1.100", snapshot=20)
 #    cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELG",        redshift="z0.950", snapshot=16)
 #    cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELG",        redshift="z1.100", snapshot=16)
 #    cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELG",        redshift="z1.325", snapshot=16)
-#    cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.100", snapshot=12)
+    cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.100", snapshot=12)
 #    cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.400", snapshot=12)
-#    cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.700", snapshot=12)
+    cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.700", snapshot=12)
 
 
     ### Abacus 500Mpc
