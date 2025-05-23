@@ -22,12 +22,14 @@ def bits(ask="try"):
     if ask == "downsample_LOP":  return 4  #(0 0 0 1 0 0)
     if ask == "Y1foot":          return 8  #(0 0 1 0 0 0)
     if ask == "Y1footbright":    return 16  #(0 1 0 0 0 0)
+    if ask == "Y3foot":          return 32  #(1 0 0 0 0 0)
+    if ask == "Y3footbright":    return 64  #(0 0 0 0 1 1)
     print(f"You have asked for {ask}. Which does not exist. Please check bits() function in apply_survey_geometry.py.")
     os._exit(1)
 
 
-def mask(nz=0, Y5=0, nz_lop=0, Y1=0, Y1BRIGHT=0):
-    return nz * (2**0) + Y5 * (2**1) + nz_lop * (2**2) + Y1 * (2**3) + Y1BRIGHT * (2**4) 
+def mask(nz=0, Y5=0, nz_lop=0, Y1=0, Y1BRIGHT=0, Y3=0, Y3BRIGHT=0):
+    return nz * (2**0) + Y5 * (2**1) + nz_lop * (2**2) + Y1 * (2**3) + Y1BRIGHT * (2**4) + Y3 * (2**5) + Y3BRIGHT * (2**6)
 
 
 def apply_footprint(ra, dec, footprint_mask):
@@ -47,12 +49,18 @@ def apply_footprint(ra, dec, footprint_mask):
         bitval = bits(ask="Y1foot")
     elif footprint_mask == 2:
         tiles = Table.read('/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/tiles-BRIGHT.fits')
-        bitval = bits(ask="Y1foot")
+        bitval = bits(ask="Y1footbright")
     elif footprint_mask == 3:
         tiles_dark = Table.read('/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/tiles-DARK.fits')
         tiles_bright = Table.read('/global/cfs/cdirs/desi/survey/catalogs/Y1/LSS/tiles-BRIGHT.fits')
         tiles = vstack([tiles_dark, tiles_bright])
         bitval = bits(ask="Y1foot")
+    elif footprint_mask == 4:
+        tiles = Table.read('/global/cfs/cdirs/desi/survey/catalogs/DA2/LSS/tiles-DARK.fits')
+        bitval = bits(ask="Y3foot")
+    elif footprint_mask == 5:
+        tiles = Table.read('/global/cfs/cdirs/desi/survey/catalogs/DA2/LSS/tiles-BRIGHT.fits')
+        bitval = bits(ask="Y3footbright")
     else:
         print("ERROR: Wrong footprint.", flush=True)
         os._exit(1)
@@ -236,14 +244,18 @@ class SurveyGeometry():
         ra = data['RA'][()]
         dec = data['DEC'][()]
         z_cosmo = data['Z_RSD'][()]
+#        haloid = data['HALOID']
+#        halomass = data['HALOMASS']
+#        iscentral = data['ISCENTRAL']
         ##TEMPz_cosmo = data['Z_COSMO'][()]
         foot_bit_0 = apply_footprint(ra, dec, 0)
         foot_bit_1 = apply_footprint(ra, dec, 1)
+        foot_bit_4 = apply_footprint(ra, dec, 4)
 
         if self.mock_random_ic != "ic":
             down_bit, ran_arr = self.downsample(z_cosmo, n_mean, radec=[ra, dec])
 
-            out_arr = np.bitwise_or(np.bitwise_or(foot_bit_0, foot_bit_1), down_bit)
+            out_arr = np.bitwise_or(np.bitwise_or(np.bitwise_or(foot_bit_0,foot_bit_4), foot_bit_1), down_bit)
         else:
             foot_bit_2 = apply_footprint(ra, dec, 2)
             out_arr = np.bitwise_or(np.bitwise_or(foot_bit_0, foot_bit_1), foot_bit_2)
@@ -261,6 +273,15 @@ class SurveyGeometry():
                 f.create_dataset('galaxy/RAN_NUM_0_1', data=ran_arr[0], dtype=np.float32)
                 if self.galtype == "ELG":
                     f.create_dataset('galaxy/RAN_NUM_0_1_LOP', data=ran_arr[1], dtype=np.float32)
+            '''
+            if 'HALOID' in data.keys():
+                f.create_dataset('galaxy/HALOID', data=data['HALOID'][()],  dtype=np.int32)
+            if 'HALOMASS' in data.keys():
+                f.create_dataset('galaxy/HALOMASS', data=data['HALOMASS'][()],  dtype=np.float32)
+            if 'ISCENTRAL' in data.keys():
+                f.create_dataset('galaxy/ISCENTRAL', data=data['ISCENTRAL'][()],  dtype=bool)
+            '''
+
         f.close()
 
     def shell(self, path_instance, nproc=5, footprint_mask=0, todo=1):

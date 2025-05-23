@@ -1,0 +1,22 @@
+1) git checkout highfidelity_dr2
+2) Divide boxes into subboxes for paralelization with aux/make_targets_subboxes.py
+srun -C cpu --ntasks=1 --cpus-per-task=25 -t 01:00:00 --qos interactive --account desi python make_targets_subboxes.py
+
+3) Define the config file
+4)
+
+time srun -N 1 -C cpu --cpus-per-task=64 -t 01:00:00 --ntasks=1 --qos interactive --account desi python main_hf.py
+
+################## FINISHED in 409.6166970729828
+
+real	7m0.877s
+user	0m0.160s
+sys	0m0.281s
+
+
+################## FINISHED in 261.6615991592407
+
+real	4m34.214s
+user	0m0.158s
+sys	0m0.391s
+ 
