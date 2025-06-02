@@ -392,9 +392,9 @@ class LightCone():
 
                 if self.mock_random_ic == "mock":
                     out_file.create_dataset('galaxy/Z_RSD',   data=aux0_array, dtype=np.float32)
-                    out_file.create_dataset('galaxy/HALOID',   data=aux2_array, dtype=np.int32)
-                    out_file.create_dataset('galaxy/HALOMASS',   data=aux3_array, dtype=np.float32)
-                    out_file.create_dataset('galaxy/ISCENTRAL',   data=aux4_array, dtype=bool)
+                    out_file.create_dataset('galaxy/HALO_ID',   data=aux2_array, dtype=np.int64)
+                    out_file.create_dataset('galaxy/HALO_MASS',   data=aux3_array, dtype=np.float32)
+                    out_file.create_dataset('galaxy/IS_CENTRAL',   data=aux4_array, dtype=bool)
                 elif self.mock_random_ic == "random":
                     out_file.create_dataset('galaxy/ID',      data=aux0_array, dtype=np.int32)
                 elif self.mock_random_ic == "ic":

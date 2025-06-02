@@ -96,7 +96,7 @@ def main():
     cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.500")
     cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.725")
     cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.950")
-    #cutsky_ABACUS_HF(args, galtype="ELG", gal_in_name="ELG",        redshift="z0.950")
+    cutsky_ABACUS_HF(args, galtype="ELG", gal_in_name="ELG",        redshift="z0.950")
     cutsky_ABACUS_HF(args, galtype="ELG", gal_in_name="ELG",        redshift="z1.175")
     cutsky_ABACUS_HF(args, galtype="ELG", gal_in_name="ELG",        redshift="z1.475")
     cutsky_ABACUS_HF(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.400")

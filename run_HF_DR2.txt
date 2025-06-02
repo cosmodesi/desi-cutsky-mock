@@ -19,4 +19,29 @@ sys	0m0.281s
 real	4m34.214s
 user	0m0.158s
 sys	0m0.391s
- 
+
+
+
+In PREPARATION
+srun -N 1 -C cpu -t 02:00:00 --ntasks=1 --qos interactive --account desi python prepare_mocks_Y3.py --survey DA2 --specdata loa-v1 --dataversion v1.1 --mockname AbacusHF --tracer ELG --ELGsplit y --ELGtpcol STATUS --nzmask y --ztruecol Z_COSMO --zrsdcol Z --input_mockpath /global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v1.0/AbacusSummit_base_c000_ph000/CutSky/ELG/z0.950/ --input_mockfile cutsky_ELG_z0.950_AbacusSummit_base_c000_ph000.fits --output_fullpathfn /global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v1.0/AbacusSummit_base_c000_ph000/CutSky/ELG/z0.950/forFA0_Y3.fits
+
+srun -N 1 -C cpu -t 02:00:00 --ntasks=1 --qos interactive --account desi python prepare_mocks_Y3.py --survey DA2 --specdata loa-v1 --dataversion v1.1 --mockname AbacusHF --tracer QSO --nzmask y --ztruecol Z_COSMO --zrsdcol Z --input_mockpath /global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v1.0/AbacusSummit_base_c000_ph000/CutSky/QSO/z1.400/ --input_mockfile cutsky_QSO_z1.400_AbacusSummit_base_c000_ph000.fits --output_fullpathfn /global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v1.0/AbacusSummit_base_c000_ph000/CutSky/QSO/z1.400/forFA0_Y3.fits
+
+srun -N 1 -C cpu -t 02:00:00 --ntasks=1 --qos interactive --account desi python prepare_mocks_Y3.py --survey DA2 --specdata loa-v1 --dataversion v1.1 --mockname AbacusHF --tracer LRG --nzmask y --ztruecol Z_COSMO --zrsdcol Z --input_mockpath /global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v1.0/AbacusSummit_base_c000_ph000/CutSky/LRG/z0.500/ --input_mockfile cutsky_LRG_z0.500_AbacusSummit_base_c000_ph000.fits --output_fullpathfn /global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v1.0/AbacusSummit_base_c000_ph000/CutSky/LRG/z0.500/forFA0_Y3.fits
+
+Then concatenate.
+
+
+INITIALIZE 
+srun -C cpu -t 02:00:00 --ntasks=1 --cpus-per-task=32 --qos interactive --account desi python initialize_amtl_mocks_da2.py /global/cfs/cdirs/desi/survey/catalogs/DA2/mocks/AbacusHighFidelity/forFA0.fits /global/cfs/cdirs/desi/survey/catalogs/DA2/mocks/AbacusHighFidelity/altmtl0 DARK
+
+Then run altMTL
+
+
+1) get pota: 
+base_input="/global/cfs/cdirs/desi/survey/catalogs/DA2/mocks/AbacusHighFidelity/forFA0.fits"
+base_output="/global/cfs/cdirs/desi/survey/catalogs/DA2/mocks/AbacusHighFidelity/mock0"
+tile_temp_dir="/global/cfs/cdirs/desi/survey/catalogs/DA2/mocks/AbacusHighFidelity/mock0"
+mkdir -p ${tile_temp_dir}
+
+srun -C cpu -n 1 --qos=interactive -A desi -t 04:00:00 --mem=108G --cpus-per-task=54 python getpotaDA2_mock.py --prog DARK --mock Generic --realization 0 --base_input ${base_input} --base_output ${base_output} --tile_temp_dir ${tile_temp_dir}
