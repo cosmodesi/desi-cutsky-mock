@@ -38,13 +38,10 @@ def LC_ABACUS(args, galtype=None):
     stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT")
 
 def cutsky_ic_ABACUS(args, galtype=None, redshift=None, snapshot=None):
+    
     in_fol_temp = "AbacusSummit_base_c000_ph"
-    if galtype == 'LRG':
-        config_file = f"./ABACUS/config/config_ABACUS_ic_LRG.ini"
-    elif galtype == 'ELG':
-        config_file = f"./ABACUS/config/config_ABACUS_ic_ELG.ini"
-    elif galtype == 'QSO':
-        config_file = f"./ABACUS/config/config_ABACUS_ic_QSO.ini"
+
+    config_file = f"./ABACUS/config/config_ABACUS_ic.ini"
 
     ######### Instances
     lightcone_instance = LightCone(config_file, args)
@@ -54,10 +51,11 @@ def cutsky_ic_ABACUS(args, galtype=None, redshift=None, snapshot=None):
     for i in range(0, 1):
         phase = str(int(i)).zfill(3)
 
-        in_part_path = "{redshift}/" + f"/{in_fol_temp}{phase}/"
-        input_name = "ic_dens_576_SB{subbox}.fits"
+        in_part_path = f"/{in_fol_temp}{phase}/"
+        #in_part_path = "{redshift}/" + f"/{in_fol_temp}{phase}/"
+        input_name = "ic_real_space.sub{subbox}.fits.gz"
 
-        out_part_path = f"/{redshift}/{in_fol_temp}{phase}/"		
+        out_part_path = f"{in_fol_temp}{phase}/"		
         output_name = "ic_snap{snapshot}_ph" + phase + "_shell_{shellnum}.hdf5"
 
         path_instance = Paths(config_file, args, in_part_path, input_name, out_part_path, output_name)
@@ -66,7 +64,7 @@ def cutsky_ic_ABACUS(args, galtype=None, redshift=None, snapshot=None):
 
         survey_geometry_instance.shell(path_instance, nproc=64, todo=3)
 
-        out_fits = path_instance.dir_out + f"/{redshift}/fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
+        out_fits = path_instance.dir_out + f"fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
         stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
 
 def cutsky_ABACUS(args, galtype=None, gal_in_name=None, redshift=None, snapshot=None):
@@ -303,10 +301,11 @@ def main():
 #    cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELG",        redshift="z0.950", snapshot=16)
 #    cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELG",        redshift="z1.100", snapshot=16)
 #    cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELG",        redshift="z1.325", snapshot=16)
-    cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.100", snapshot=12)
+#    cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.100", snapshot=12)
 #    cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.400", snapshot=12)
-    cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.700", snapshot=12)
+#    cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.700", snapshot=12)
 
+    cutsky_ic_ABACUS(args, galtype="",    redshift="", snapshot=12)
 
     ### Abacus 500Mpc
     # cutsky_small_ABACUS(args, galtype="LRG", gal_in_name="LRG", redshift="z0.800", snapshot=20)
