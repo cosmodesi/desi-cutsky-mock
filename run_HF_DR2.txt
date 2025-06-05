@@ -45,3 +45,19 @@ tile_temp_dir="/global/cfs/cdirs/desi/survey/catalogs/DA2/mocks/AbacusHighFideli
 mkdir -p ${tile_temp_dir}
 
 srun -C cpu -n 1 --qos=interactive -A desi -t 04:00:00 --mem=108G --cpus-per-task=54 python getpotaDA2_mock.py --prog DARK --mock Generic --realization 0 --base_input ${base_input} --base_output ${base_output} --tile_temp_dir ${tile_temp_dir}
+
+2) lrg mask:
+input="/global/cfs/cdirs/desi/survey/catalogs/DA2/mocks/AbacusHighFidelity/forFA0.fits"
+output="/global/cfs/cdirs/desi/survey/catalogs/DA2/mocks/AbacusHighFidelity/forFA0_matched_input_full_lrg_imask.fits"
+
+srun -C cpu -n 1 --qos=interactive -A desi -t 04:00:00 --cpus-per-task=16 python readwrite_pixel_bitmask_da2.py --tracer lrg --input $input --output $output --cat_type Generic --nproc 16
+
+3) srun -N 1 -C cpu -t 02:00:00 --qos interactive --account desi python mkCat_SecondGen_amtl.py --simName AbacusHighFidelity/ --mockver ab_secondgen --mocknum 0 --survey DA2 --add_gtl y --specdata loa-v1 --tracer dark --targDir /dvs_ro/cfs/cdirs/desi/survey/catalogs/DA2/mocks/AbacusHighFidelity/ --combd y --joindspec y --par y --usepota y
+
+4) srun -N 1 -C cpu -t 02:00:00 --qos interactive --account desi python mkCat_SecondGen_amtl.py --simName AbacusHighFidelity/ --mockver ab_secondgen --mocknum 0 --survey DA2 --specdata loa-v1 --tracer LRG --targDir /dvs_ro/cfs/cdirs/desi/survey/catalogs/DA2/mocks/AbacusHighFidelity/ --fulld y --apply_veto y --par y
+
+srun -N 1 -C cpu -t 02:00:00 --qos interactive --account desi python mkCat_SecondGen_amtl.py --simName AbacusHighFidelity/ --mockver ab_secondgen --mocknum 0 --survey DA2 --specdata loa-v1 --tracer QSO --targDir /dvs_ro/cfs/cdirs/desi/survey/catalogs/DA2/mocks/AbacusHighFidelity/ --fulld y --apply_veto y --par y
+
+srun -N 1 -C cpu -t 02:00:00 --qos interactive --account desi python mkCat_SecondGen_amtl.py --simName AbacusHighFidelity/ --mockver ab_secondgen --mocknum 0 --survey DA2 --specdata loa-v1 --tracer ELG_LOP --targDir /dvs_ro/cfs/cdirs/desi/survey/catalogs/DA2/mocks/AbacusHighFidelity/ --fulld y --apply_veto y --par y --notqso y
+
+srun -N 1 -C cpu -t 02:00:00 --qos interactive --account desi python mkCat_SecondGen_amtl.py --simName AbacusHighFidelity/ --mockver ab_secondgen --mocknum 0 --survey DA2 --specdata loa-v1 --tracer ELG --targDir /dvs_ro/cfs/cdirs/desi/survey/catalogs/DA2/mocks/AbacusHighFidelity/ --fulld y --apply_veto y --par y --notqso y
