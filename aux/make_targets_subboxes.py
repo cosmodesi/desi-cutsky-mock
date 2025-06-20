@@ -10,16 +10,16 @@ targ = 'ELG'
 snapshots = {'LRG':[['0p500','z0.500'],['0p725','z0.725'],['0p950','z0.950']], 'QSO':[['1p400','z1.400']], 'ELG':[['0p950', 'z0.950'], ['1p175', 'z1.175'],['1p475', 'z1.475']]}
 
 
-
+# /global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v1.0/AbacusSummit_base_c000_ph000/High_dens_Boxes/ELG
 def func(i):
 
 #for i in range(0,24):
     phase = str(int(i)).zfill(3)
     for j in range(len(snapshots[targ])):
-        opath = f'/global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v1.0/AbacusSummit_base_c000_ph{phase}/Boxes/{targ}/{snapshots[targ][j][1]}'
+        opath = f'/global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v1.0/AbacusSummit_base_c000_ph{phase}/High_dens_Boxes/{targ}/{snapshots[targ][j][1]}'
         if not os.path.isdir(opath):
             os.mkdir(opath)
-        ipath = f'/global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v1.0/AbacusSummit_base_c000_ph{phase}/Boxes/{targ}/abacus_HF_{targ}_{snapshots[targ][j][0]}_DR2_v1.0_AbacusSummit_base_c000_ph{phase}_clustering.dat.fits'
+        ipath = f'/global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v1.0/AbacusSummit_base_c000_ph{phase}/High_dens_Boxes/{targ}/abacus_HF_{targ}_{snapshots[targ][j][0]}_DR2_v1.0_AbacusSummit_base_c000_ph{phase}_clustering.dat.fits'
         if not os.path.isfile(ipath):
             print(ipath, 'dont exist')
             continue
@@ -130,13 +130,13 @@ def func(i):
             t2 = Table.from_pandas(subdf)
             t2.write(os.path.join(opath, f'{targ}_real_space.sub%d.fits.gz' % j), overwrite=True)
 
-'''
+
 pool = sharedmem.MapReduce(np=25)
         #with Pool() as pool:#Pool(processes=nproc) as pool:
 inds = np.arange(0,25)
 with pool:
     res = pool.map(func, inds)
-'''
-func(15)
-func(21)
-func(18)
+
+#func(15)
+#func(21)
+#func(18)

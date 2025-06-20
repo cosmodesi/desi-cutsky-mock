@@ -23,7 +23,6 @@ def count_aux(status_tmp, ra_tmp):
 
 
 def count(files):
-    print(len(files))
 
     counter_TOT = 0
     counter_NGC = 0
