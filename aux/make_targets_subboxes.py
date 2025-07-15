@@ -3,11 +3,12 @@ import os
 from astropy.table import Table
 from desitarget.internal import sharedmem
 
-targ = 'ELG'
+targ = 'QSO'
 #phase = '000'
 
 
-snapshots = {'LRG':[['0p500','z0.500'],['0p725','z0.725'],['0p950','z0.950']], 'QSO':[['1p400','z1.400']], 'ELG':[['0p950', 'z0.950'], ['1p175', 'z1.175'],['1p475', 'z1.475']]}
+snapshots = {'LRG':[['0p500','z0.500'],['0p725','z0.725'],['0p950','z0.950']], 'QSO':[['2p000','z2.000'], ['2p500','z2.500'], ['3p000','z3.000']], 'ELG':[['0p950', 'z0.950'], ['1p175', 'z1.175'],['1p475', 'z1.475']]}
+#snapshots = {'LRG':[['0p500','z0.500'],['0p725','z0.725'],['0p950','z0.950']], 'QSO':[['1p400','z1.400']], 'ELG':[['0p950', 'z0.950'], ['1p175', 'z1.175'],['1p475', 'z1.475']]}
 
 
 # /global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v1.0/AbacusSummit_base_c000_ph000/High_dens_Boxes/ELG
@@ -16,10 +17,12 @@ def func(i):
 #for i in range(0,24):
     phase = str(int(i)).zfill(3)
     for j in range(len(snapshots[targ])):
-        opath = f'/global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v1.0/AbacusSummit_base_c000_ph{phase}/High_dens_Boxes/{targ}/{snapshots[targ][j][1]}'
+        opath = f'/global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v1.0/AbacusSummit_base_c000_ph{phase}/Boxes/{targ}/{snapshots[targ][j][1]}'
+        #opath = f'/global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v1.0/AbacusSummit_base_c000_ph{phase}/High_dens_Boxes/{targ}/{snapshots[targ][j][1]}'
         if not os.path.isdir(opath):
             os.mkdir(opath)
-        ipath = f'/global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v1.0/AbacusSummit_base_c000_ph{phase}/High_dens_Boxes/{targ}/abacus_HF_{targ}_{snapshots[targ][j][0]}_DR2_v1.0_AbacusSummit_base_c000_ph{phase}_clustering.dat.fits'
+        ipath = f'/global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v1.0/AbacusSummit_base_c000_ph{phase}/Boxes/{targ}/abacus_HF_{targ}_{snapshots[targ][j][0]}_DR2_v1.0_AbacusSummit_base_c000_ph{phase}_clustering.dat.fits'
+        #ipath = f'/global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v1.0/AbacusSummit_base_c000_ph{phase}/High_dens_Boxes/{targ}/abacus_HF_{targ}_{snapshots[targ][j][0]}_DR2_v1.0_AbacusSummit_base_c000_ph{phase}_clustering.dat.fits'
         if not os.path.isfile(ipath):
             print(ipath, 'dont exist')
             continue
@@ -29,9 +32,12 @@ def func(i):
         lrgs['X'] += 1000
         lrgs['Y'] += 1000
         lrgs['Z'] += 1000
-        lrgs['X_RSD'] += 1000
-        lrgs['Y_RSD'] += 1000
-        lrgs['Z_RSD'] += 1000
+        if 'X_RSD' in lrgs.columns:
+            lrgs['X_RSD'] += 1000
+        if 'Y_RSD' in lrgs.columns:
+            lrgs['Y_RSD'] += 1000
+        if 'Z_RSD' in lrgs.columns:
+            lrgs['Z_RSD'] += 1000
 
         if len(lrgs[lrgs['X'] == 0.]) > 0:
             print('X equals 0 is not zero',len(lrgs[lrgs['X'] == 0.]))

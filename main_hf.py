@@ -53,7 +53,7 @@ def cutsky_ABACUS_HF(args, galtype=None, gal_in_name=None, redshift=None):
     survey_geometry_instance = SurveyGeometry(config_file, args, galtype=galtype)
 
     # ######### CutSky
-    for i in range(1):
+    for i in range(24,25):
         phase = str(int(i)).zfill(3)
 
         in_part_path = "{redshift}/" #+ f"/{in_fol_temp}{phase}/"
@@ -93,13 +93,16 @@ def main():
     import time
     start = time.time()
 
-    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.500")
-    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.725")
-    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.950")
-    cutsky_ABACUS_HF(args, galtype="ELG", gal_in_name="ELG",        redshift="z0.950")
-    cutsky_ABACUS_HF(args, galtype="ELG", gal_in_name="ELG",        redshift="z1.175")
-    cutsky_ABACUS_HF(args, galtype="ELG", gal_in_name="ELG",        redshift="z1.475")
-    cutsky_ABACUS_HF(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.400")
+#    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.500")
+#    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.725")
+#    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.950")
+#    cutsky_ABACUS_HF(args, galtype="ELG", gal_in_name="ELG",        redshift="z0.950")
+#    cutsky_ABACUS_HF(args, galtype="ELG", gal_in_name="ELG",        redshift="z1.175")
+#    cutsky_ABACUS_HF(args, galtype="ELG", gal_in_name="ELG",        redshift="z1.475")
+#    cutsky_ABACUS_HF(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.400")
+    cutsky_ABACUS_HF(args, galtype="QSO", gal_in_name="QSO",        redshift="z2.000")
+    #cutsky_ABACUS_HF(args, galtype="QSO", gal_in_name="QSO",        redshift="z2.500")
+    #cutsky_ABACUS_HF(args, galtype="QSO", gal_in_name="QSO",        redshift="z3.000")
 
 
     end = time.time()
