@@ -11,13 +11,18 @@ from astropy.io import fits
 import h5py
 
 import camb
+from cosmoprimo.fiducial import AbacusSummit
+from scipy.optimize import brentq
 import numpy as np
 import healpy as hp
 import numexpr as ne
-
+from mockfactory import DistanceToRedshift
 from rotation_matrix import RotationMatrix
 
 ne.set_num_threads(4)
+def z_at_r(r, zmin=0.0, zmax=20.0):
+    def f(z): return distance(z) - r
+    return brentq(f, zmin, zmax)
 
 def tp2rd(tht, phi):
     """ convert theta,phi to ra/dec """
@@ -27,7 +32,7 @@ def tp2rd(tht, phi):
 
 
 class Paths():
-    def __init__(self, config_file, args, in_part_path, input_name, out_part_path, output_name, phase=None):
+    def __init__(self, config_file, args, in_part_path, input_name, out_part_path, output_name, phase=None, cosmo='000'):
         config     = configparser.ConfigParser()
         config.read(config_file)
 
@@ -41,17 +46,23 @@ class Paths():
 
         self.in_part_path 			 = in_part_path		
         self.out_part_path 			 = out_part_path
+#        if cosmo == '000':
+#            self.cosmoprimo = False
+#        else:
+#            self.cosmoprimo = True
+        
+        self.cosmoprimo = True
 
         if self.dir_out is None:
             self.dir_out     =  config.get('dir', 'dir_out')
         if self.dir_in is None:
             self.dir_in      =  config.get('dir', 'dir_in')
 
-        self.dir_out     = self.dir_out.format(phase=phase)
+        self.dir_out     = self.dir_out.format(phase=phase, cosmo=cosmo)
 
         self.shells_out_path = self.create_outpath()
 
-        self.input_file       = self.dir_in + self.in_part_path + self.input_name		
+        self.input_file       = self.dir_in.format(phase=phase, cosmo=cosmo) + self.in_part_path + self.input_name		
         self.output_file      = self.shells_out_path + self.output_name
 
     def create_outpath(self):
@@ -60,9 +71,11 @@ class Paths():
             os.makedirs(out_path)
         return out_path
 
+    def return_cosmoprimo(self):
+        return self.cosmoprimo
 
 class LightCone():
-    def __init__(self, config_file, args, parallel_BOOL=True):
+    def __init__(self, config_file, args, parallel_BOOL=True, cosmoprimo=False, cosmo='000'):
         config     = configparser.ConfigParser()
         config.read(config_file)
 
@@ -72,6 +85,9 @@ class LightCone():
         self.zmin           = config.getfloat('sim', 'zmin')
         self.zmax           = config.getfloat('sim', 'zmax')
         self.rotate         = config.getboolean('sim', 'rotate')
+        self.abac = AbacusSummit(name=cosmo, engine='class')
+        self.distance = self.abac.comoving_radial_distance
+        self.distance_to_redshift = DistanceToRedshift(distance=self.distance)
 
         self.mock_random_ic = args.mock_random_ic
         if self.mock_random_ic is None:
@@ -79,7 +95,7 @@ class LightCone():
 
         self.origin  = [0, 0, 0]
         self.clight  = 299792458.
-
+        self.cosmoprimo = cosmoprimo
         self.h, self.results = self.run_camb()
         file_alist     =  config.get('dir','file_alist')
         self.alist = np.loadtxt(file_alist)
@@ -97,12 +113,21 @@ class LightCone():
         pars.NonLinearModel.set_params(halofit_version='takahashi')
         camb.set_feedback_level(level=100)
         results   = camb.get_results(pars)
-        return h, results
+        if self.cosmoprimo:
+            return self.abac.h, results
+        else:
+            return h, results
 
 
     def compute_shellnums(self):
-        shellnum_min = int(self.results.comoving_radial_distance(self.zmin) * self.h // self.shellwidth)
-        shellnum_max = int(self.results.comoving_radial_distance(self.zmax) * self.h // self.shellwidth + 1)
+        if self.cosmoprimo:
+            shellnum_min = int(self.distance(self.zmin)  // self.shellwidth)
+            shellnum_max = int(self.distance(self.zmax)  // self.shellwidth + 1)
+
+        else:
+            shellnum_min = int(self.results.comoving_radial_distance(self.zmin) * self.h // self.shellwidth)
+            shellnum_max = int(self.results.comoving_radial_distance(self.zmax) * self.h // self.shellwidth + 1)
+
         shellnums = list(range(shellnum_min, shellnum_max+1))
         print(f"INFO: There are {len(shellnums)} shells.")
         return shellnums
@@ -207,9 +232,15 @@ class LightCone():
                         ux = sx[idx] / r[idx]
                         uy = sy[idx] / r[idx]
                         uz = sz[idx] / r[idx]
-                        zp = self.results.redshift_at_comoving_radial_distance(r[idx] / self.h)
-#                        zp = zi[idx]
+                        if self.cosmoprimo:
+                            zp = []
+                            for rr in r[idx]:
+                                zp.append(self.distance_to_redshift(rr))
+                            zp = np.array(zp)
+                            #zp = z_at_r(r[idx]) 
+                        else:
 
+                            zp = self.results.redshift_at_comoving_radial_distance(r[idx] / self.h)
                         if self.mock_random_ic == "mock":
                             vx_0 = vx[idx]
                             vy_0 = vy[idx]
@@ -293,15 +324,21 @@ class LightCone():
             chilow = self.shellwidth * (shellnum + 0)
             chiupp = self.shellwidth * (shellnum + 1)
             chimid = 0.5 * (chilow + chiupp)
-
             # Check whether the minimum redshift of the shell is outside the redshift range of interest 
-            zlow = self.results.redshift_at_comoving_radial_distance(chilow / self.h)
+            if self.cosmoprimo:
+                zlow = self.distance_to_redshift(chilow)
+            else:
+                zlow = self.results.redshift_at_comoving_radial_distance(chilow / self.h)
+
             if zlow > self.zmax:
                 continue
 
             if not cutsky:
                 print("Light-cone")
-                zmid = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
+                if self.cosmoprimo:
+                    zmid = self.distance_to_redshift(chimid)
+                else:
+                    zmid = self.results.redshift_at_comoving_radial_distance(chimid / self.h)
                 nearestsnap, nearestred = self.getnearestsnap(zmid)
 
                 snapshot = nearestsnap
@@ -320,9 +357,10 @@ class LightCone():
                 counter = 0
                 for subbox in range(n_subboxes):
                     if phase is not None:
-                        infile = path_instance.input_file.format(redshift=redshift, subbox=subbox, phase=phase)
-                    else:
                         infile = path_instance.input_file.format(redshift=redshift, subbox=subbox)
+                    #infile = path_instance.input_file.format(redshift=redshift, subbox=subbox, phase=phase)
+                    #else:
+                    #    infile = path_instance.input_file.format(redshift=redshift, subbox=subbox)
                     prefix = f"[shellnum={shellnum}; subbox={subbox}]: "
 
                 #self.generate_shell(infile, subbox, prefix, chilow, chiupp, return_dict)
@@ -340,7 +378,8 @@ class LightCone():
             else:
                 return_dict = {}
                 for subbox in range(n_subboxes):
-                    infile = path_instance.input_file.format(redshift=redshift, subbox=subbox, phase=phase)
+                    infile = path_instance.input_file.format(redshift=redshift, subbox=subbox)
+                    #infile = path_instance.input_file.format(redshift=redshift, subbox=subbox, phase=phase)
                     prefix = f"[shellnum={shellnum}; subbox={subbox}]: "
                     self.generate_shell(infile, subbox, prefix, chilow, chiupp, return_dict)
 

@@ -43,17 +43,21 @@ def cutsky_ic_ABACUS(args, galtype=None, redshift=None, snapshot=None):
         out_fits = path_instance.dir_out + f"/{redshift}/fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
         stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
 
-def cutsky_ABACUS_HF(args, galtype=None, gal_in_name=None, redshift=None):
+def cutsky_ABACUS_HF(args, galtype=None, gal_in_name=None, redshift=None, cosmo='000', phas=None):
     cpus = int(os.environ.get("SLURM_CPUS_PER_TASK", 6))
     config_file = f"./ABACUS/config/config_ABACUS_{galtype}_HFDR2.ini"
-    in_fol_temp = "AbacusSummit_base_c000_ph"
+    in_fol_temp = f"AbacusSummit_base_c{cosmo}_ph"
 
     ######### Instances
-    lightcone_instance = LightCone(config_file, args)
     survey_geometry_instance = SurveyGeometry(config_file, args, galtype=galtype)
 
     # ######### CutSky
-    for i in range(24,25):
+    if phas is None:
+        maxrange = 25
+    else:
+        maxrange = phas
+
+    for i in range(0, maxrange):
         phase = str(int(i)).zfill(3)
 
         in_part_path = "{redshift}/" #+ f"/{in_fol_temp}{phase}/"
@@ -63,8 +67,8 @@ def cutsky_ABACUS_HF(args, galtype=None, gal_in_name=None, redshift=None):
         out_part_path = f"/{redshift}/{in_fol_temp}{phase}/"		
         output_name = gal_in_name + "_ph" + phase + "_shell_{shellnum}.hdf5"
 
-        path_instance = Paths(config_file, args, in_part_path, input_name, out_part_path, output_name, phase=phase)
-
+        path_instance = Paths(config_file, args, in_part_path, input_name, out_part_path, output_name, phase=phase, cosmo=cosmo)
+        lightcone_instance = LightCone(config_file, args, cosmoprimo=path_instance.return_cosmoprimo(), cosmo=cosmo)
         lightcone_instance.generate_shells(path_instance, redshift=redshift, cutsky=True, nproc=cpus, n_subboxes=64, cat_seed=i, phase=phase)
 
         survey_geometry_instance.shell(path_instance, nproc=cpus, todo=3)
@@ -93,14 +97,39 @@ def main():
     import time
     start = time.time()
 
-#    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.500")
+
+    snaps = ['AbacusSummit_base_c001_ph000', 'AbacusSummit_base_c001_ph004', 'AbacusSummit_base_c002_ph002', 'AbacusSummit_base_c003_ph000', 'AbacusSummit_base_c003_ph004',
+         'AbacusSummit_base_c004_ph002', 'AbacusSummit_base_c001_ph001', 'AbacusSummit_base_c001_ph005', 'AbacusSummit_base_c002_ph003', 'AbacusSummit_base_c003_ph001',
+         'AbacusSummit_base_c003_ph005', 'AbacusSummit_base_c004_ph003', 'AbacusSummit_base_c001_ph002', 'AbacusSummit_base_c002_ph000', 'AbacusSummit_base_c002_ph004',
+         'AbacusSummit_base_c003_ph002', 'AbacusSummit_base_c004_ph000', 'AbacusSummit_base_c004_ph004', 'AbacusSummit_base_c001_ph003', 'AbacusSummit_base_c002_ph001',
+         'AbacusSummit_base_c002_ph005', 'AbacusSummit_base_c003_ph003', 'AbacusSummit_base_c004_ph001', 'AbacusSummit_base_c004_ph005']
+
+
+    '''cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.500", cosmo='001', phas=6)
+    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.725", cosmo='001', phas=6)
+    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.950", cosmo='001', phas=6)
+    
+    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.500", cosmo='002', phas=6)
+    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.725", cosmo='002', phas=6)
+    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.950", cosmo='002', phas=6)
+    
+    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.500", cosmo='003', phas=6)
+    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.725", cosmo='003', phas=6)
+    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.950", cosmo='003', phas=6)
+
+    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.500", cosmo='004', phas=6)
+    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.725", cosmo='004', phas=6)'''
+    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.950", cosmo='004', phas=6)
+
+
+
 #    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.725")
 #    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.950")
 #    cutsky_ABACUS_HF(args, galtype="ELG", gal_in_name="ELG",        redshift="z0.950")
 #    cutsky_ABACUS_HF(args, galtype="ELG", gal_in_name="ELG",        redshift="z1.175")
 #    cutsky_ABACUS_HF(args, galtype="ELG", gal_in_name="ELG",        redshift="z1.475")
 #    cutsky_ABACUS_HF(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.400")
-    cutsky_ABACUS_HF(args, galtype="QSO", gal_in_name="QSO",        redshift="z2.000")
+#    cutsky_ABACUS_HF(args, galtype="QSO", gal_in_name="QSO",        redshift="z2.000")
     #cutsky_ABACUS_HF(args, galtype="QSO", gal_in_name="QSO",        redshift="z2.500")
     #cutsky_ABACUS_HF(args, galtype="QSO", gal_in_name="QSO",        redshift="z3.000")
 
