@@ -7,7 +7,7 @@ import argparse
 
 from generate_light_cone import LightCone, Paths
 from apply_survey_geometry import SurveyGeometry
-
+import os
 from stack_shells_into_fits import stack_shells
 
 def LC_ABACUS(args, galtype=None):
@@ -45,10 +45,10 @@ def cutsky_ic_ABACUS(args, galtype=None, redshift=None, snapshot=None):
 
     ######### Instances
     lightcone_instance = LightCone(config_file, args)
-    # survey_geometry_instance = SurveyGeometry(config_file, args, galtype=galtype)
+    survey_geometry_instance = SurveyGeometry(config_file, args, galtype=galtype)
 
     # ######### CutSky
-    for i in range(0, 1):
+    for i in range(1, 2):
         phase = str(int(i)).zfill(3)
 
         in_part_path = f"/{in_fol_temp}{phase}/"
@@ -60,12 +60,12 @@ def cutsky_ic_ABACUS(args, galtype=None, redshift=None, snapshot=None):
 
         path_instance = Paths(config_file, args, in_part_path, input_name, out_part_path, output_name)
 
-        lightcone_instance.generate_shells(path_instance, snapshot=snapshot, redshift=redshift, cutsky=True, nproc=6, n_subboxes=64, cat_seed=i)
+        lightcone_instance.generate_shells(path_instance, snapshot=snapshot, redshift=redshift, cutsky=True, nproc=64, n_subboxes=64, cat_seed=i)
 
         survey_geometry_instance.shell(path_instance, nproc=64, todo=3)
 
-        out_fits = path_instance.dir_out + f"fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
-        stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
+        out_fits = os.path.join(path_instance.dir_out, f"cutsky_ic_{in_fol_temp}{phase}.fits")
+        stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="ic", ngc_sgc_tot="TOT", seed=i)
 
 def cutsky_ABACUS(args, galtype=None, gal_in_name=None, redshift=None, snapshot=None):
     in_fol_temp = "AbacusSummit_base_c000_ph"
