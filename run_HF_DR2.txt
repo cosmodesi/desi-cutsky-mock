@@ -7,6 +7,10 @@ srun -C cpu --ntasks=1 --cpus-per-task=25 -t 01:00:00 --qos interactive --accoun
 
 time srun -N 1 -C cpu --cpus-per-task=64 -t 01:00:00 --ntasks=1 --qos interactive --account desi python main_hf.py
 
+cosmodesi
+ALERNATIVE COSMOLOGIES:  nohup srun -C cpu -n 1 --qos=interactive -A desi -t 04:00:00 --cpus-per-task=64 python -u main_hf.py >> elg_alternative.out &
+
+
 ################## FINISHED in 409.6166970729828
 
 real	7m0.877s

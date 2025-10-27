@@ -58,6 +58,8 @@ def cutsky_ABACUS_HF(args, galtype=None, gal_in_name=None, redshift=None, cosmo=
         maxrange = phas
 
     for i in range(0, maxrange):
+        #if cosmo == '004' and i<4:
+        #    continue
         phase = str(int(i)).zfill(3)
 
         in_part_path = "{redshift}/" #+ f"/{in_fol_temp}{phase}/"
@@ -119,9 +121,17 @@ def main():
 
     cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.500", cosmo='004', phas=6)
     cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.725", cosmo='004', phas=6)'''
-    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.950", cosmo='004', phas=6)
+    
+    for cos in ['c001', 'c002', 'c003', '004']:
+#        for rea in [0,1,2,3,4,5]:
+            for snap in ['z1.400']: #, 'z1.175', 'z1.475']:
+#                if cos == '004' and snap == 'z0.950':
+#                    continue
+                #if cos == '002' and snap == 'z1.175':
+                #    continue
+                cutsky_ABACUS_HF(args, galtype="QSO", gal_in_name="QSO", redshift=snap, cosmo=cos, phas=6)
 
-
+#003_ph004/CutSky/ELG///z1.175
 
 #    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.725")
 #    cutsky_ABACUS_HF(args, galtype="LRG", gal_in_name="LRG",        redshift="z0.950")

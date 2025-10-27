@@ -23,7 +23,6 @@ def count_aux(status_tmp, ra_tmp):
 
 
 def count(files):
-    print(len(files))
 
     counter_TOT = 0
     counter_NGC = 0
@@ -44,8 +43,7 @@ def count(files):
     return counter_TOT, counter_NGC, counter_SGC
 
 def fill_array_ns(output_data_array, input_data_array, columns, idx, index_i, n_mean, survey_geometry_instance):
-    print('this is bad')
-    z_cosmo_tmp = input_data_array["Z_COSMO"][()]
+    z_cosmo_tmp = input_data_array["Z_BAD"][()]
     size_ = len(z_cosmo_tmp[idx])
 
     if "Z_RSD" in input_data_array.keys():
@@ -74,8 +72,7 @@ def fill_array_ns(output_data_array, input_data_array, columns, idx, index_i, n_
 
 
 def fill_array(output_data_array, input_data_array, columns, idx, index_i, n_mean, survey_geometry_instance):
-    print('this is ok')
-    z_cosmo_tmp = input_data_array["Z_COSMO"][()]
+    z_cosmo_tmp = input_data_array["Z_BAD"][()]
     size_ = len(z_cosmo_tmp[idx])
 
     if "Z_RSD" in input_data_array.keys():
@@ -111,14 +108,16 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
     counter_TOT, counter_NGC, counter_SGC = count(files)
     print(f"The number of tracers: TOT={counter_TOT}; NGC={counter_NGC}; SGC={counter_SGC}")
 
-    general_columns = [('RA', 'f8'), ('DEC', 'f8'), ('Z_BAD', 'f4'), ('STATUS', 'i4')]#, ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
-    #general_columns = [('RA', 'f4'), ('DEC', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4')]#, ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
+    general_columns = [('RA', 'f4'), ('DEC', 'f4'), ('Z_BAD', 'f4'), ('STATUS', 'i4')]#, ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
 
     if mock_random_ic != "ic":
         general_columns += [('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
 
+
+
+
     if mock_random_ic == "mock":
-        add_columns = [('Z', 'f4')]
+        add_columns = [('Z', 'f4'), ('IDCEN', 'f4', ), ('RVIR', 'f4'), ('VPEAKHOST', 'f4'), ('LOGMCEN', 'f4'), ('SAT', 'f4'), ('VDISPP', 'f4')]
     elif mock_random_ic == "random":
         add_columns = [('ID', 'i4')]
     elif mock_random_ic == "ic":
