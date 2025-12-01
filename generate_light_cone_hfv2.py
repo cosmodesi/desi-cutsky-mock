@@ -32,9 +32,10 @@ def tp2rd(tht, phi):
 
 
 class Paths():
-    def __init__(self, config_file, args, input_name, out_part_path, output_name, phase=None, cosmo='000'):
-        
-
+#    dir_out                         = /global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v2.0/AbacusSummit_base_c000_ph{phase}/CutSky/LRG/
+#dir_in                          = /global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v2.0/AbacusSummit_base_c{cosmo}_ph{phase}/Boxes/LRG/{snap}/{basetag}/
+#config_file, args, input_name, out_part_path, output_name, phase=phase, cosmo=cosmo, basetag=basetag, snapshot=snapshot
+    def __init__(self, config_file, args, input_name, out_part_path, output_name, phase=None, cosmo='000', basetag=None, snapshot=None):
         config     = configparser.ConfigParser()
         config.read(config_file)
 
@@ -46,7 +47,7 @@ class Paths():
         self.input_name              = input_name
         self.output_name             = output_name
 
-        		
+#        self.in_part_path 			 = in_part_path		
         self.out_part_path 			 = out_part_path
 #        if cosmo == '000':
 #            self.cosmoprimo = False
@@ -64,7 +65,7 @@ class Paths():
 
         self.shells_out_path = self.create_outpath()
 
-        self.input_file       = self.dir_in.format(phase=phase, cosmo=cosmo) + self.input_name		
+        self.input_file       = self.dir_in.format(phase=phase, cosmo=cosmo, basetag=basetag, snap=snapshot) + self.input_name		
         self.output_file      = self.shells_out_path + self.output_name
 
     def create_outpath(self):
@@ -171,25 +172,19 @@ class LightCone():
         print(prefix + "tiling [%dx%dx%d]" % (2 * ntiles, 2 * ntiles, 2 * ntiles))
         print(prefix + 'Generating map for halos in the range [%3.f - %.3f Mpc/h]' % (chilow, chiupp))
 
-        px    = data['x']
-        py    = data['y']
-        pz    =	data['z']
-        #pz    =	data['zreal']
+        px    = data['X']
+        py    = data['Y']
+        pz    =	data['RSDZ']
+        #prsd = data['RSDZ']
         ngalbox = len(px)
 
         if self.mock_random_ic == "mock":
-            vx    = data['vx']
-            vy    = data['vy']
-            vz    = data['vz']
-            idhost = data['IDcen']
-            #idhost = data['idhost']
-            vpeak = data['vdispp']
-            #vpeak = data['Vpeak']
-            vpeakhost = data['Vpeakhost']
-            logmhost = data['logMcen']
-            #logmhost = data['logMhost']
-            sat = data['sat']
-#IDcen', 'Rvir', 'Vpeakhost', 'logMcen', 'sat', 'vdispp'            
+            vx    = data['VX']
+            vy    = data['VY']
+            vz    = data['VZ']
+            haloid = data['HALO_ID']
+            halomass = data['MASS']
+            iscentral = data['ISCENTRAL']
 
         elif self.mock_random_ic == "random":
             id_ = data["id"]
@@ -203,15 +198,10 @@ class LightCone():
         totra   = np.array([])
         totdec  = np.array([])
         totz    = np.array([])
-
         tot_aux = np.array([])
         tot_aux2 = np.array([])
         tot_aux3 = np.array([])
         tot_aux4 = np.array([])
-        tot_aux5 = np.array([])
-        tot_aux6 = np.array([])
-        #tot_aux7 = np.array([])
-        #tot_aux8 = np.array([])
 
         [axx, axy, axz, ayx, ayy, ayz, azx, azy, azz] = self.rotation_matrix
 
@@ -255,10 +245,9 @@ class LightCone():
                         else:
 
                             zp = self.results.redshift_at_comoving_radial_distance(r[idx] / self.h)
-                        
                         if self.mock_random_ic == "mock":
-                            vx_0 = vx[idx] #np.zeros_like(vz[idx])
-                            vy_0 = vy[idx] #np.zeros_like(vz[idx])
+                            vx_0 = vx[idx]
+                            vy_0 = vy[idx]
                             vz_0 = vz[idx]
 
                             if self.rotate:
@@ -276,14 +265,11 @@ class LightCone():
 
                             vlos    = ne.evaluate("qx * ux + qy * uy + qz * uz")
                             dz      = ne.evaluate("(vlos / clight) * (1 + zp)")
-                            tot_aux = np.append(tot_aux, zp + dz)
-                            tot_aux2 = np.append(tot_aux2, idhost[idx])
-                            tot_aux3 = np.append(tot_aux3, vpeak[idx])
-                            tot_aux4 = np.append(tot_aux4, vpeakhost[idx])
-                            tot_aux5 = np.append(tot_aux5, logmhost[idx])
-                            tot_aux6 = np.append(tot_aux6, sat[idx])
-#                            tot_aux7 = np.append(tot_aux7, vdispp[idx])
-
+                            tot_aux = np.append(tot_aux, zp)
+                            ##tot_aux = np.append(tot_aux, zp + dz)
+                            tot_aux2 = np.append(tot_aux2, haloid[idx])
+                            tot_aux3 = np.append(tot_aux3, halomass[idx])
+                            tot_aux4 = np.append(tot_aux4, iscentral[idx])
 
                         elif self.mock_random_ic == "random":
                             tot_aux = np.append(tot_aux, id_[idx])
@@ -297,8 +283,7 @@ class LightCone():
                         totdec  = np.append(totdec, dec)
                         totz    = np.append(totz  , zp)
 
-        return totra, totdec, totz, [tot_aux, tot_aux2, tot_aux3, tot_aux4, tot_aux5, tot_aux6], ngalbox
-        #return totra, totdec, totz, [tot_aux, tot_aux2, tot_aux3, tot_aux4, tot_aux5, tot_aux6, tot_aux7], ngalbox
+        return totra, totdec, totz, [tot_aux, tot_aux2, tot_aux3, tot_aux4], ngalbox
 
 
     def getnearestsnap(self, zmid):
@@ -332,8 +317,7 @@ class LightCone():
         ra0, dec0, zz0, aux0, ngalbox = self.convert_xyz2rdz(data, prefix, chilow, chiupp)
 
 
-        shell_subbox_dict = {"ra0": ra0, "dec0": dec0, "zz0": zz0, "aux0": aux0[0], "aux2": aux0[1], "aux3": aux0[2], "aux4": aux0[3], "aux5": aux0[4], "aux6": aux0[5]}
-        #shell_subbox_dict = {"ra0": ra0, "dec0": dec0, "zz0": zz0, "aux0": aux0[0], "aux2": aux0[1], "aux3": aux0[2], "aux4": aux0[3], "aux5": aux0[4], "aux6": aux0[5], "aux7": aux0[6]}
+        shell_subbox_dict = {"ra0": ra0, "dec0": dec0, "zz0": zz0, "aux0": aux0[0], "aux2": aux0[1], "aux3": aux0[2], "aux4": aux0[3]}
         return_dict[subbox] = shell_subbox_dict
 
         return_dict["NGAL" + str(subbox)] = ngalbox
@@ -378,10 +362,11 @@ class LightCone():
                 counter = 0
                 for subbox in range(n_subboxes):
                     if phase is not None:
-                        infile = path_instance.input_file.format(redshift=redshift, subbox=subbox)
+                        infile = path_instance.input_file.format(subbox=subbox)
+                        ##TEMPinfile = path_instance.input_file.format(redshift=redshift, subbox=subbox)
                     #infile = path_instance.input_file.format(redshift=redshift, subbox=subbox, phase=phase)
-                    else:
-                        infile = path_instance.input_file.format(redshift=redshift, subbox=subbox)
+                    #else:
+                    #    infile = path_instance.input_file.format(redshift=redshift, subbox=subbox)
                     prefix = f"[shellnum={shellnum}; subbox={subbox}]: "
 
                 #self.generate_shell(infile, subbox, prefix, chilow, chiupp, return_dict)
@@ -420,9 +405,6 @@ class LightCone():
             aux2_array = np.zeros(n_gal_shell_all_subboxes)
             aux3_array = np.zeros(n_gal_shell_all_subboxes)
             aux4_array = np.zeros(n_gal_shell_all_subboxes)
-            aux5_array = np.zeros(n_gal_shell_all_subboxes)
-            aux6_array = np.zeros(n_gal_shell_all_subboxes)
-#            aux7_array = np.zeros(n_gal_shell_all_subboxes)
             counter_ngal = 0
 
             ### Fill the arrays
@@ -441,33 +423,23 @@ class LightCone():
                 aux2_array[index_i: index_f] = shell_subbox_dict["aux2"]
                 aux3_array[index_i: index_f] = shell_subbox_dict["aux3"]
                 aux4_array[index_i: index_f] = shell_subbox_dict["aux4"]
-                aux5_array[index_i: index_f] = shell_subbox_dict["aux5"]
-                aux6_array[index_i: index_f] = shell_subbox_dict["aux6"]
-#                aux7_array[index_i: index_f] = shell_subbox_dict["aux7"]
 
                 index_i = index_f
 
             out_file_name_tmp  = out_file_name + "_tmp"
-            #aux4_array = np.asarray(aux4_array, dtype=bool)
+            aux4_array = np.asarray(aux4_array, dtype=bool)
 
             with h5py.File(out_file_name_tmp, 'w') as out_file:
                 out_file.create_group('galaxy')
-                out_file.create_dataset('galaxy/RA',      data=ra0_array,    dtype=np.float64)
-                out_file.create_dataset('galaxy/DEC',     data=dec0_array,   dtype=np.float64)
-                ##out_file.create_dataset('galaxy/Z_RSD', data=zz0_array,     dtype=np.float32)
+                out_file.create_dataset('galaxy/RA',      data=ra0_array,    dtype=np.float32)
+                out_file.create_dataset('galaxy/DEC',     data=dec0_array,   dtype=np.float32)
                 out_file.create_dataset('galaxy/Z_COSMO', data=zz0_array,     dtype=np.float32)
 
-
-
                 if self.mock_random_ic == "mock":
-                    #out_file.create_dataset('galaxy/Z_BAD',   data=aux0_array, dtype=np.float32)
                     out_file.create_dataset('galaxy/Z_RSD',   data=aux0_array, dtype=np.float32)
-                    out_file.create_dataset('galaxy/IDHOST',   data=aux2_array, dtype=np.int64)
-                    out_file.create_dataset('galaxy/VPEAK',   data=aux3_array, dtype=np.float32)
-                    out_file.create_dataset('galaxy/VPEAKHOST',   data=aux4_array, dtype=np.float32)
-                    out_file.create_dataset('galaxy/LOGMHOST',   data=aux5_array, dtype=np.float32)
-                    out_file.create_dataset('galaxy/SAT',   data=aux6_array, dtype=np.int16)
-#                    out_file.create_dataset('galaxy/VDISPP',   data=aux7_array, dtype=np.float32)
+                    out_file.create_dataset('galaxy/HALO_ID',   data=aux2_array, dtype=np.int64)
+                    out_file.create_dataset('galaxy/MASS',   data=aux3_array, dtype=np.float32)
+                    out_file.create_dataset('galaxy/ISCENTRAL',   data=aux4_array, dtype=bool)
                 elif self.mock_random_ic == "random":
                     out_file.create_dataset('galaxy/ID',      data=aux0_array, dtype=np.int32)
                 elif self.mock_random_ic == "ic":

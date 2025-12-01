@@ -114,7 +114,7 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
         general_columns += [('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
 
     if mock_random_ic == "mock":
-        add_columns = [('Z', 'f4'), ('HALO_ID', 'i8', ), ('HALO_MASS', 'f4'), ('IS_CENTRAL', bool)]
+        add_columns = [('Z', 'f4'), ('HALO_ID', 'i8', ), ('MASS', 'f4'), ('ISCENTRAL', bool)]
     elif mock_random_ic == "random":
         add_columns = [('ID', 'i4')]
     elif mock_random_ic == "ic":

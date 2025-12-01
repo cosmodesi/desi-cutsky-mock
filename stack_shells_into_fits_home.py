@@ -43,7 +43,7 @@ def count(files):
     return counter_TOT, counter_NGC, counter_SGC
 
 def fill_array_ns(output_data_array, input_data_array, columns, idx, index_i, n_mean, survey_geometry_instance):
-    z_cosmo_tmp = input_data_array["Z_BAD"][()]
+    z_cosmo_tmp = input_data_array["Z_COSMO"][()]
     size_ = len(z_cosmo_tmp[idx])
 
     if "Z_RSD" in input_data_array.keys():
@@ -53,11 +53,11 @@ def fill_array_ns(output_data_array, input_data_array, columns, idx, index_i, n_
 
     for col, type_ in columns:
         if col == "NZ":
-            output_data_array["NZ"][index_i: index_f]      = np.mean(survey_geometry_instance.get_nz(z_cosmo_tmp[idx], ask="downsample", ns='yes'), axis=0)
+            output_data_array["NZ"][index_i: index_f]      = np.mean(survey_geometry_instance.get_nz(z_rsd_tmp[idx], ask="downsample", ns='yes'), axis=0)
         elif col == "NZ_LOP":
-            output_data_array["NZ_LOP"][index_i: index_f] = survey_geometry_instance.get_nz(z_cosmo_tmp[idx], ask="downsample_LOP")
+            output_data_array["NZ_LOP"][index_i: index_f] = survey_geometry_instance.get_nz(z_rsd_tmp[idx], ask="downsample_LOP")
         elif col == "RAW_NZ":
-            output_data_array["RAW_NZ"][index_i: index_f] = np.ones(len(z_cosmo_tmp[idx])) * n_mean
+            output_data_array["RAW_NZ"][index_i: index_f] = np.ones(len(z_rsd_tmp[idx])) * n_mean
         elif col == "Z_ERR_3GAUSS":
             output_data_array["Z_ERR_3GAUSS"][index_i: index_f] = sample_redshift_error(z_rsd_tmp[idx], error_model='3gauss')
         elif col == "Z_ERR_SIG500":
@@ -72,7 +72,7 @@ def fill_array_ns(output_data_array, input_data_array, columns, idx, index_i, n_
 
 
 def fill_array(output_data_array, input_data_array, columns, idx, index_i, n_mean, survey_geometry_instance):
-    z_cosmo_tmp = input_data_array["Z_BAD"][()]
+    z_cosmo_tmp = input_data_array["Z_COSMO"][()]
     size_ = len(z_cosmo_tmp[idx])
 
     if "Z_RSD" in input_data_array.keys():
@@ -82,11 +82,11 @@ def fill_array(output_data_array, input_data_array, columns, idx, index_i, n_mea
 
     for col, type_ in columns:
         if col == "NZ":
-            output_data_array["NZ"][index_i: index_f]      = survey_geometry_instance.get_nz(z_cosmo_tmp[idx], ask="downsample")
+            output_data_array["NZ"][index_i: index_f]      = survey_geometry_instance.get_nz(z_rsd_tmp[idx], ask="downsample")
         elif col == "NZ_LOP":
-            output_data_array["NZ_LOP"][index_i: index_f] = survey_geometry_instance.get_nz(z_cosmo_tmp[idx], ask="downsample_LOP")
+            output_data_array["NZ_LOP"][index_i: index_f] = survey_geometry_instance.get_nz(z_rsd_tmp[idx], ask="downsample_LOP")
         elif col == "RAW_NZ":
-            output_data_array["RAW_NZ"][index_i: index_f] = np.ones(len(z_cosmo_tmp[idx])) * n_mean
+            output_data_array["RAW_NZ"][index_i: index_f] = np.ones(len(z_rsd_tmp[idx])) * n_mean
         elif col == "Z_ERR_3GAUSS":
             output_data_array["Z_ERR_3GAUSS"][index_i: index_f] = sample_redshift_error(z_rsd_tmp[idx], error_model='3gauss')
         elif col == "Z_ERR_SIG500":
@@ -108,7 +108,7 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
     counter_TOT, counter_NGC, counter_SGC = count(files)
     print(f"The number of tracers: TOT={counter_TOT}; NGC={counter_NGC}; SGC={counter_SGC}")
 
-    general_columns = [('RA', 'f4'), ('DEC', 'f4'), ('Z_BAD', 'f4'), ('STATUS', 'i4')]#, ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
+    general_columns = [('RA', 'f8'), ('DEC', 'f8'), ('Z_COSMO', 'f4'), ('STATUS', 'i4')]#, ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
 
     if mock_random_ic != "ic":
         general_columns += [('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
@@ -117,7 +117,7 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
 
 
     if mock_random_ic == "mock":
-        add_columns = [('Z', 'f4'), ('IDCEN', 'f4', ), ('RVIR', 'f4'), ('VPEAKHOST', 'f4'), ('LOGMCEN', 'f4'), ('SAT', 'f4'), ('VDISPP', 'f4')]
+        add_columns = [('Z', 'f4'), ('IDHOST', 'f4', ), ('VPEAK', 'f4'), ('VPEAKHOST', 'f4'), ('LOGMHOST', 'f4'), ('SAT', 'i2')]
     elif mock_random_ic == "random":
         add_columns = [('ID', 'i4')]
     elif mock_random_ic == "ic":

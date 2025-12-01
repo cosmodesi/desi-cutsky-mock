@@ -29,14 +29,14 @@ def cutsky_HOME(args, galtype=None, gal_in_name=None, redshift=None, cosmo='000'
 
     path_instance = Paths(config_file, args, input_name, out_part_path, output_name, phase=phas, cosmo=cosmo)
     lightcone_instance = LightCone(config_file, args, cosmoprimo=path_instance.return_cosmoprimo(), cosmo=cosmo)
-    #TEMPlightcone_instance.generate_shells(path_instance, redshift=redshift, cutsky=True, nproc=cpus, n_subboxes=64, cat_seed=1, phase=phas)
+    lightcone_instance.generate_shells(path_instance, redshift=redshift, cutsky=True, nproc=cpus, n_subboxes=64, cat_seed=1, phase=phas)
 
-    #TEMPsurvey_geometry_instance.shell(path_instance, nproc=cpus, todo=3)
+    survey_geometry_instance.shell(path_instance, nproc=cpus, todo=3)
     #survey_geometry_instance.shell_series(path_instance, todo=3)
 
-    out_fits = path_instance.dir_out + f"cutsky_{galtype}_zrsd.fits"
+    out_fits = path_instance.dir_out + f"cutsky_home_{galtype}_test.fits"
         
-    stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=10)
+    stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=42)
 
 
 
@@ -60,6 +60,7 @@ def main():
 
 
     cutsky_HOME(args, galtype="LRG", gal_in_name="LRG", cosmo='000')
+    #cutsky_HOME(args, galtype="ELG", gal_in_name="ELG", cosmo='000')
     
 
 
