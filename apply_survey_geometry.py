@@ -261,10 +261,10 @@ class SurveyGeometry():
             out_arr = np.bitwise_or(np.bitwise_or(foot_bit_0, foot_bit_1), foot_bit_2)
 
         out_arr = out_arr.astype(np.int32)
-        if "STATUS" in data.keys():
-            print("WARNING: STATUS EXISTS. New STATUS has not been written.")
-        else:
-            f.create_dataset('galaxy/STATUS', data=out_arr,  dtype=np.int32)
+##TEMP        if "STATUS" in data.keys():
+##TEMP            print("WARNING: STATUS EXISTS. New STATUS has not been written.")
+##TEMP        else:
+        f.create_dataset('galaxy/STATUS', data=out_arr,  dtype=np.int32)
 
         if self.mock_random_ic != "ic":
             if "RAN_NUM_0_1" in data.keys():
@@ -279,7 +279,7 @@ class SurveyGeometry():
             if 'HALOMASS' in data.keys():
                 f.create_dataset('galaxy/HALOMASS', data=data['HALOMASS'][()],  dtype=np.float32)
             if 'ISCENTRAL' in data.keys():
-                f.create_dataset('galaxy/ISCENTRAL', data=data['ISCENTRAL'][()],  dtype=bool)
+                f.create_dataset('galaxy/ISCENTRAL', data=data['ISCENTRAL'][()],  dtype=np.int32)
             '''
 
         f.close()

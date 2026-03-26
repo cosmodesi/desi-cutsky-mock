@@ -9,7 +9,7 @@ from mockfactory import Catalog
 
 
 def apply_periodic(x, L):
-    return (x + 0.5 * L) % L - 0.5 * L
+    return (x + 0.5 * L) % L #- 0.5 * L
 
 
 
@@ -39,7 +39,8 @@ def func(ifile, opath, targ):
         print(targ)
         if not os.path.isdir(opath):
             os.mkdir(opath)
-        
+        if os.path.isfile(os.path.join(opath, f'{targ}_real_space.sub0.fits.gz')):
+            return 0
         cat = Catalog.read(ifile)
 
         test_cat = catalog_to_rsd(cat)
@@ -55,10 +56,6 @@ def func(ifile, opath, targ):
         #df = pd.DataFrame(cat)
         
         print(targ, len(df), df.columns)
-        print(np.min(df['X']), np.max(df['X']))
-        print(np.min(df['Y']), np.max(df['Y']))
-        print(np.min(df['Z']), np.max(df['Z']))
-        
         df['X'] += 1000
         df['Y'] += 1000
         #testy = apply_periodic(cat['Y'], 2000)
@@ -66,7 +63,19 @@ def func(ifile, opath, targ):
         #exit()
         df['Z'] += 1000 #apply_periodic(df['z'], 2000) + 1000
         df['RSDZ'] += 1000
+
+        df['X'] = apply_periodic(df['X'],2000)
+        df['Y'] = apply_periodic(df['Y'],2000)
+        df['Z'] = apply_periodic(df['Z'],2000)
+        df['RSDZ'] = apply_periodic(df['RSDZ'],2000)
+
+
+        print(np.min(df['X']), np.max(df['X']))
+        print(np.min(df['Y']), np.max(df['Y']))
+        print(np.min(df['Z']), np.max(df['Z']))
+        print(np.min(df['RSDZ']), np.max(df['RSDZ']))
         
+       
         num_sub_boxes = 4
 
         # Create bins for x, y, z coordinates
@@ -76,6 +85,8 @@ def func(ifile, opath, targ):
         df['x_bin'] = np.digitize(df['X'], bins) - 1
         df['y_bin'] = np.digitize(df['Y'], bins) - 1
         df['z_bin'] = np.digitize(df['Z'], bins) - 1
+
+
 
         print(set(df['x_bin']), set(df['y_bin']),set(df['z_bin']))
 
@@ -95,19 +106,27 @@ def func(ifile, opath, targ):
 
 targ = 'QSO'
 
-
-
-for i in range(25):
+#filetosave = open('lrg_list.txt','w')
+print('TARG', targ)
+for i in range(12, 13):
+    print('realization', i)
+#    for sn in ['1p850']:  #QSO
     for sn in ['0p950', '1p250', '1p550', '1p850']:  #QSO
+#    for sn in ['1p175']:  #ELG
     #for sn in ['0p950', '1p175', '1p475']:  #ELG
     #for sn in ['0p500', '0p725', '0p950']: #LRG
+#        print('snapshot', sn)
+        #for typ in ['base_B','base']: #LRG
+#            print('type fit', typ)
 #        for typ in ['base_B','base_B_dv','base','base_dv']: #LRG
         for typ in ['base']: #QSO
+            #print('type fit', typ)
         #for typ in ['base_conf_nfwexp']: #ELG
             filename = f'abacus_HF_{targ}_{sn}_DR2_v2.0_AbacusSummit_base_c000_ph{str(int(i)).zfill(3)}_{typ}_clustering.dat.h5'
             input_path = f'/global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v2.0/AbacusSummit_base_c000_ph{str(int(i)).zfill(3)}/Boxes/{targ}/{filename}'
             output_path = f'/global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v2.0/AbacusSummit_base_c000_ph{str(int(i)).zfill(3)}/Boxes/{targ}/sn{sn}/{typ}'
             os.makedirs(output_path, exist_ok=True)
+#            filetosave.write('%s %s %s\n' %(input_path, output_path, targ))
             print(input_path, output_path)
             func(input_path, output_path, targ)
-    
+#filetosave.close()

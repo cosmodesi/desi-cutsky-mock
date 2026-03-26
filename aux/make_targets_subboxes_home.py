@@ -35,8 +35,8 @@ def func(ifile, opath, targ):
         print(np.min(df['y']), np.max(df['y']))
         print(np.min(df['z']), np.max(df['z']))
         
-        df['x'] += 1000
-        df['y'] += 1000
+        df['x'] = apply_periodic(df['x'], 2000) + 1000
+        df['y'] = apply_periodic(df['y'], 2000) + 1000
         df['z'] = apply_periodic(df['z'], 2000) + 1000
         
         '''
@@ -126,7 +126,7 @@ def func(ifile, opath, targ):
             t2.write(os.path.join(opath, f'{targ}_real_space.sub%d.fits.gz' % j), overwrite=True)
 
 
-func('/pscratch/sd/a/acarnero/home/LRG_auto_mock.h5', '/pscratch/sd/a/acarnero/home/LRG', 'LRG')
+func('/pscratch/sd/a/acarnero/home/ELG_auto_mock_augmentedx5.h5', '/pscratch/sd/a/acarnero/home/ELG', 'ELG')
 #func('/global/cfs/projectdirs/desi/users/gfavole/aurelio/ELG_LRG_home_Y3_nz_x3.h5', '/global/cfs/cdirs/desi/survey/catalogs/DA2/mocks/HOMe/Boxes/LRG_period', 'LRG')
 #func('/global/cfs/projectdirs/desi/mocks/cai/test_HOMe/ELG_mock.h5', '/global/cfs/projectdirs/desi/mocks/cai/test_HOMe/ELG', 'ELG')
 #pool = sharedmem.MapReduce(np=25)

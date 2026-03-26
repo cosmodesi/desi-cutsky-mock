@@ -59,8 +59,8 @@ def main():
     start = time.time()
 
 
-    cutsky_HOME(args, galtype="LRG", gal_in_name="LRG", cosmo='000')
-    #cutsky_HOME(args, galtype="ELG", gal_in_name="ELG", cosmo='000')
+#    cutsky_HOME(args, galtype="LRG", gal_in_name="LRG", cosmo='000')
+    cutsky_HOME(args, galtype="ELG", gal_in_name="ELG", cosmo='000')
     
 
 

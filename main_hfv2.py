@@ -57,11 +57,12 @@ def cutsky_ABACUS_HF(args, galtype=None, basetag=None, snapshot=None, cosmo='000
     else:
         maxrange = phas
 
-    for i in range(0, 1):
-        #if cosmo == '004' and i<4:
+    for i in range(0, 2):
+#        if snapshot == 'sn0p950' and i<16:
+#            continue
         #    continue
         phase = str(int(i)).zfill(3)
-
+        print(phase)
         #in_part_path = "{redshift}/" #+ f"/{in_fol_temp}{phase}/"
         input_name = galtype + "_real_space.sub{subbox}.fits.gz"
 
@@ -80,6 +81,46 @@ def cutsky_ABACUS_HF(args, galtype=None, basetag=None, snapshot=None, cosmo='000
         
         stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
 
+def cutsky_ABACUS_HF_array(args, galtype=None, basetag=None, snapshot=None, cosmo='000', phas=None, realization=0):
+    cpus = int(os.environ.get("SLURM_CPUS_PER_TASK", 6))
+    config_file = f"./ABACUS/config/config_ABACUS_{galtype}_HFDR2_v2.ini"
+    in_fol_temp = f"AbacusSummit_base_c{cosmo}_ph"
+
+    ######### Instances
+    survey_geometry_instance = SurveyGeometry(config_file, args, galtype=galtype)
+
+    # ######### CutSky
+    if phas is None:
+        maxrange = 25
+    else:
+        maxrange = phas
+
+    i = realization
+    #for i in range(12, 20):
+#        if snapshot == 'sn0p950' and i<16:
+#            continue
+        #    continue
+    phase = str(int(i)).zfill(3)
+    print(phase)
+        #in_part_path = "{redshift}/" #+ f"/{in_fol_temp}{phase}/"
+    input_name = galtype + "_real_space.sub{subbox}.fits.gz"
+
+
+    out_part_path = f"/{snapshot}/{basetag}/{in_fol_temp}{phase}/"		
+    output_name = galtype + "_ph" + phase + "_shell_{shellnum}.hdf5"
+
+    path_instance = Paths(config_file, args, input_name, out_part_path, output_name, phase=phase, cosmo=cosmo, basetag=basetag, snapshot=snapshot)
+    lightcone_instance = LightCone(config_file, args, cosmoprimo=path_instance.return_cosmoprimo(), cosmo=cosmo)
+    lightcone_instance.generate_shells(path_instance, redshift=snapshot, cutsky=True, nproc=cpus, n_subboxes=64, cat_seed=i, phase=phase)
+
+    survey_geometry_instance.shell(path_instance, nproc=cpus, todo=3)
+        ##survey_geometry_instance.shell_series(path_instance, todo=3)
+
+    out_fits = path_instance.dir_out + f"/{snapshot}/cutsky_{galtype}_{snapshot}_{basetag}_{in_fol_temp}{phase}.fits"
+    
+    stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
+
+
 
 
 
@@ -93,6 +134,7 @@ def main():
     parser.add_argument("--phase", type=int, help="phase of the catalog")
     parser.add_argument("--ngc_sgc", type=str, help="NGC or SGC preferred rotation")
     parser.add_argument("--mock_random_ic", type=str, help="mock, random or ic")
+    parser.add_argument("--rea", type=int, help="mock, random or ic")
 
     args = parser.parse_args()
 
@@ -130,21 +172,31 @@ def main():
     '''
     #dir_out                         = /global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v2.0/AbacusSummit_base_c000_ph{phase}/CutSky/LRG/
 #dir_in                          = /global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v2.0/AbacusSummit_base_c{cosmo}_ph{phase}/Boxes/LRG/{snap}/{basetag}/
+#    cutsky_ABACUS_HF(args, galtype="LRG", basetag='base', snapshot='sn0p950')
     '''
-    for snap in ['sn0p500', 'sn0p725', 'sn0p950']:
-        for type_ in ['base_B_dv', 'base', 'base_B', 'base_dv']:
+    for snap in ['sn0p950']:
+    ##for snap in ['sn0p500', 'sn0p725', 'sn0p950']:
+        for type_ in ['base_B']:
+        #for type_ in ['base_B_dv', 'base', 'base_B', 'base_dv']:
             cutsky_ABACUS_HF(args, galtype="LRG", basetag=type_, snapshot=snap)
-    for snap in ['sn0p950', 'sn1p475', 'sn1p175']:
+    '''
+    '''    
+    for snap in ['sn1p175']:
+    #for snap in ['sn0p950', 'sn1p475', 'sn1p175']:
         for type_ in ['base_conf_nfwexp']:
             cutsky_ABACUS_HF(args, galtype="ELG", basetag=type_, snapshot=snap)
     '''
-    for snap in ['sn1p550', 'sn1p250', 'sn1p850']:
-    #for snap in ['sn0p950', 'sn1p550', 'sn1p250', 'sn1p850']:
-        for type_ in ['base']:
-            cutsky_ABACUS_HF(args, galtype="QSO", basetag=type_, snapshot=snap)
-
-#    cutsky_ABACUS_HF(args, galtype="LRG", basetag="base_B", snapshot="sn0p500")
+    for snap in ['sn0p500', 'sn0p725', 'sn0p950']:
+        for type_ in ['base_B']:
+            cutsky_ABACUS_HF_array(args, galtype="LRG", basetag=type_, snapshot=snap, realization=args.rea)
+            #cutsky_ABACUS_HF(args, galtype="QSO", basetag=type_, snapshot=snap)
+    cutsky_ABACUS_HF_array(args, galtype="QSO", basetag='base', snapshot='sn1p550', realization=args.rea)
+    cutsky_ABACUS_HF_array(args, galtype="ELG", basetag='base_conf_nfwexp', snapshot='sn0p950', realization=args.rea)
+    cutsky_ABACUS_HF_array(args, galtype="ELG", basetag='base_conf_nfwexp', snapshot='sn1p475', realization=args.rea)
+    
     '''
+#    cutsky_ABACUS_HF(args, galtype="QSO", basetag='base', snapshot='sn1p850')
+#    cutsky_ABACUS_HF(args, galtype="LRG", basetag="base_B", snapshot="sn0p500")
 /global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v2.0/AbacusSummit_base_c000_ph000/Boxes/ELG:
 abacus_HF_ELG_0p950_DR2_v2.0_AbacusSummit_base_c000_ph000_base_conf_nfwexp_clustering.dat.h5  abacus_HF_ELG_1p475_DR2_v2.0_AbacusSummit_base_c000_ph000_base_conf_nfwexp_clustering.dat.h5  sn1p175
 abacus_HF_ELG_1p175_DR2_v2.0_AbacusSummit_base_c000_ph000_base_conf_nfwexp_clustering.dat.h5  sn0p950											    sn1p475

@@ -172,10 +172,17 @@ class LightCone():
         print(prefix + "tiling [%dx%dx%d]" % (2 * ntiles, 2 * ntiles, 2 * ntiles))
         print(prefix + 'Generating map for halos in the range [%3.f - %.3f Mpc/h]' % (chilow, chiupp))
 
+        calc_rsd = True
+
         px    = data['X']
         py    = data['Y']
-        pz    =	data['RSDZ']
-        #prsd = data['RSDZ']
+
+        if calc_rsd:
+            pz    = data['Z']
+        else:
+            pz    =	data['RSDZ']
+
+    
         ngalbox = len(px)
 
         if self.mock_random_ic == "mock":
@@ -246,27 +253,30 @@ class LightCone():
 
                             zp = self.results.redshift_at_comoving_radial_distance(r[idx] / self.h)
                         if self.mock_random_ic == "mock":
-                            vx_0 = vx[idx]
-                            vy_0 = vy[idx]
-                            vz_0 = vz[idx]
+                            if calc_rsd:
+                                vx_0 = vx[idx]
+                                vy_0 = vy[idx]
+                                vz_0 = vz[idx]
 
-                            if self.rotate:
-                                vx_1 = ne.evaluate("axx * vx_0 + axy * vy_0 + axz * vz_0")
-                                vy_1 = ne.evaluate("ayx * vx_0 + ayy * vy_0 + ayz * vz_0")
-                                vz_1 = ne.evaluate("azx * vx_0 + azy * vy_0 + azz * vz_0")
+                                if self.rotate:
+                                    vx_1 = ne.evaluate("axx * vx_0 + axy * vy_0 + axz * vz_0")
+                                    vy_1 = ne.evaluate("ayx * vx_0 + ayy * vy_0 + ayz * vz_0")
+                                    vz_1 = ne.evaluate("azx * vx_0 + azy * vy_0 + azz * vz_0")
+                                else:
+                                    vx_1 = vx_0
+                                    vy_1 = vy_0
+                                    vz_1 = vz_0
+                            
+                                qx = vx_1 * 1000.
+                                qy = vy_1 * 1000.
+                                qz = vz_1 * 1000.
+
+                                vlos    = ne.evaluate("qx * ux + qy * uy + qz * uz")
+                                dz      = ne.evaluate("(vlos / clight) * (1 + zp)")
+                                tot_aux = np.append(tot_aux, zp + dz)
                             else:
-                                vx_1 = vx_0
-                                vy_1 = vy_0
-                                vz_1 = vz_0
-
-                            qx = vx_1 * 1000.
-                            qy = vy_1 * 1000.
-                            qz = vz_1 * 1000.
-
-                            vlos    = ne.evaluate("qx * ux + qy * uy + qz * uz")
-                            dz      = ne.evaluate("(vlos / clight) * (1 + zp)")
-                            tot_aux = np.append(tot_aux, zp)
-                            ##tot_aux = np.append(tot_aux, zp + dz)
+                                tot_aux = np.append(tot_aux, zp)
+                            
                             tot_aux2 = np.append(tot_aux2, haloid[idx])
                             tot_aux3 = np.append(tot_aux3, halomass[idx])
                             tot_aux4 = np.append(tot_aux4, iscentral[idx])
@@ -439,7 +449,7 @@ class LightCone():
                     out_file.create_dataset('galaxy/Z_RSD',   data=aux0_array, dtype=np.float32)
                     out_file.create_dataset('galaxy/HALO_ID',   data=aux2_array, dtype=np.int64)
                     out_file.create_dataset('galaxy/MASS',   data=aux3_array, dtype=np.float32)
-                    out_file.create_dataset('galaxy/ISCENTRAL',   data=aux4_array, dtype=bool)
+                    out_file.create_dataset('galaxy/ISCENTRAL',   data=aux4_array, dtype=np.int32)
                 elif self.mock_random_ic == "random":
                     out_file.create_dataset('galaxy/ID',      data=aux0_array, dtype=np.int32)
                 elif self.mock_random_ic == "ic":

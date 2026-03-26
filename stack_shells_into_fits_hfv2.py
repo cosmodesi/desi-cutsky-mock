@@ -114,7 +114,7 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
         general_columns += [('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
 
     if mock_random_ic == "mock":
-        add_columns = [('Z', 'f4'), ('HALO_ID', 'i8', ), ('MASS', 'f4'), ('ISCENTRAL', bool)]
+        add_columns = [('Z', 'f4'), ('HALO_ID', 'i8', ), ('MASS', 'f4'), ('ISCENTRAL', 'i4')]
     elif mock_random_ic == "random":
         add_columns = [('ID', 'i4')]
     elif mock_random_ic == "ic":
@@ -172,7 +172,7 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
 
         f.close()
 
-    hdict = {'SV3_AREA': 207.5, 'Y5_TOT_AREA':14850.4, 'Y5_SGC_AREA':4666.5, 'Y5_NGC_AREA':10183.9}
+#    hdict = {'SV3_AREA': 207.5, 'Y5_TOT_AREA':14850.4, 'Y5_SGC_AREA':4666.5, 'Y5_NGC_AREA':10183.9}
 
     if ngc_sgc_tot == "TOT":
         print("Check last value of RA: ", data_fits_TOT["RA"][-1], ra_tmp[idx_Y5_TOT][-1])
@@ -180,7 +180,25 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
         # out_file = out_file.format(phase=seed) + "_Y5_TOT.fits"
 
         fits = fitsio.FITS(out_file + "_tmp", "rw")
-        fits.write(data_fits_TOT, header=hdict)
+        print('OUTFILE', out_file + "_tmp")
+        '''
+        print(data_fits_TOT.dtype)
+        new_descr = []
+
+        for col in data_fits_TOT.dtype.descr:
+
+            name = col[0]
+            dt   = np.dtype(col[1])
+
+            if dt.kind == 'S':
+                new_descr.append((name, f'U{dt.itemsize}'))
+            else:
+                new_descr.append((name, dt))
+
+        data_fits_TOT = data_fits_TOT.astype(new_descr)
+        '''
+        print(data_fits_TOT.dtype)
+        fits.write(data_fits_TOT)#, header=hdict)
         fits.close()
         os.rename(out_file + "_tmp", out_file)
 
@@ -192,11 +210,11 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
         out_file_SGC = out_file.format(phase=max_seed - seed + min_seed) + "_Y5_SGC.fits"
 
         fits = fitsio.FITS(out_file_NGC+"_tmp", "rw")
-        fits.write(data_fits_NGC, header=hdict)
+        fits.write(data_fits_NGC)#, header=hdict)
         fits.close()
         os.rename(out_file_NGC+"_tmp", out_file_NGC)
 
         fits = fitsio.FITS(out_file_SGC+"_tmp", "rw")
-        fits.write(data_fits_SGC, header=hdict)
+        fits.write(data_fits_SGC)#, header=hdict)
         fits.close()
         os.rename(out_file_SGC+"_tmp", out_file_SGC)
