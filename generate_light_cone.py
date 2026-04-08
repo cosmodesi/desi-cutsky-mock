@@ -142,9 +142,9 @@ class LightCone():
         print(prefix + "tiling [%dx%dx%d]" % (2 * ntiles, 2 * ntiles, 2 * ntiles))
         print(prefix + 'Generating map for halos in the range [%3.f - %.3f Mpc/h]' % (chilow, chiupp))
 
-        px    = data['x'] + 1.73611
-        py    = data['y'] + 1.73611
-        pz    =	data['z'] + 1.73611
+        px    = data['x'] #+ 1.73611
+        py    = data['y'] #+ 1.73611
+        pz    =	data['z'] #+ 1.73611
         ngalbox = len(px)
 
         if self.mock_random_ic == "mock":
