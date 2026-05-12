@@ -60,7 +60,7 @@ class Paths():
 
 
 class LightCone():
-    def __init__(self, config_file, args, parallel_BOOL=True):
+    def __init__(self, config_file, args, parallel_BOOL=False):
         config     = configparser.ConfigParser()
         config.read(config_file)
 
@@ -70,11 +70,12 @@ class LightCone():
         self.zmin           = config.getfloat('sim', 'zmin')
         self.zmax           = config.getfloat('sim', 'zmax')
         self.rotate         = config.getboolean('sim', 'rotate')
-
+        print('THIS IS ', args.mock_random_ic)
         self.mock_random_ic = args.mock_random_ic
         if self.mock_random_ic is None:
             self.mock_random_ic = config.get('sim', 'mock_random_ic')
 
+        print('THIS IS ', self.mock_random_ic)
         self.origin  = [0, 0, 0]
         self.clight  = 299792458.
 
@@ -142,9 +143,11 @@ class LightCone():
         print(prefix + "tiling [%dx%dx%d]" % (2 * ntiles, 2 * ntiles, 2 * ntiles))
         print(prefix + 'Generating map for halos in the range [%3.f - %.3f Mpc/h]' % (chilow, chiupp))
 
-        px    = data['x'] #+ 1.73611
-        py    = data['y'] #+ 1.73611
-        pz    =	data['z'] #+ 1.73611
+        #px    = data['X'] #+ 1.73611
+        px    = data['Y'] #+ 1.73611
+        py    = data['X'] #+ 1.73611
+        #py    = data['Y'] #+ 1.73611
+        pz    =	data['Z'] #+ 1.73611
         ngalbox = len(px)
 
         if self.mock_random_ic == "mock":
@@ -155,6 +158,8 @@ class LightCone():
             id_ = data["id"]
         elif self.mock_random_ic == "ic":
             dens = data["density"]
+        elif self.mock_random_ic == "proto":
+            haloid = data["HALO_ID"]
         else:
             print(f"ERROR!!! generate_lc, convert_xyz2rdz: You should choose between: mock, random or ic. You have chosen {self.mock_random_ic}")
 
@@ -226,6 +231,8 @@ class LightCone():
                             tot_aux = np.append(tot_aux, id_[idx])
                         elif self.mock_random_ic == "ic":
                             tot_aux = np.append(tot_aux, dens[idx])
+                        elif self.mock_random_ic == "proto":
+                            tot_aux = np.append(tot_aux, haloid[idx])
 
                         tht, phi = hp.vec2ang(np.c_[ux, uy, uz])
                         ra, dec  = tp2rd(tht, phi)
@@ -374,7 +381,11 @@ class LightCone():
                 elif self.mock_random_ic == "ic":
                     out_file.create_dataset('galaxy/ONEplusDELTA', data=1 + aux0_array, dtype=np.float32)
 
+                elif self.mock_random_ic == "proto":
+                    out_file.create_dataset('galaxy/HALO_ID', data= aux0_array, dtype=np.int64)
+
                 out_file.attrs['NGAL']     = counter_ngal
+                print('counter_gal', counter_ngal)
                 out_file.attrs['SHELLNUM'] = shellnum
                 out_file.attrs['SNAPSHOT'] = snapshot
                 out_file.attrs['CAT_SEED'] = cat_seed

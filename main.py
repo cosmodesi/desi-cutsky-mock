@@ -43,7 +43,7 @@ def cutsky_ic_ABACUS(args, galtype=None, redshift=None, snapshot=None):
     
     in_fol_temp = "AbacusSummit_base_c000_ph"
 
-    config_file = f"./ABACUS/config/config_ABACUS_ic.ini"
+    config_file = f"./ABACUS/config/config_ABACUS_proto.ini"
 
     ######### Instances
     lightcone_instance = LightCone(config_file, args)
@@ -53,12 +53,12 @@ def cutsky_ic_ABACUS(args, galtype=None, redshift=None, snapshot=None):
     for i in range(1):
         phase = str(int(i)).zfill(3)
 
-        in_part_path = f"/{in_fol_temp}{phase}/"
+        in_part_path = 'y1/' #f"/{in_fol_temp}{phase}/"
         #in_part_path = "{redshift}/" + f"/{in_fol_temp}{phase}/"
-        input_name = "ic_real_space.sub{subbox}.fits.gz"
-#proto_real_space.sub59.fits.gz
+        input_name = "BGS_real_space.sub{subbox}.fits.gz"
+#proto_real_space.sub59.fits.gz BGS_real_space.sub23.fits.gz
         out_part_path = f"{in_fol_temp}{phase}/"		
-        output_name = "ic_snap{snapshot}_ph" + phase + "_shell_{shellnum}.hdf5"
+        output_name = "proto_snap{snapshot}_ph" + phase + "_shell_{shellnum}.hdf5"
 
         path_instance = Paths(config_file, args, in_part_path, input_name, out_part_path, output_name)
 
@@ -66,8 +66,8 @@ def cutsky_ic_ABACUS(args, galtype=None, redshift=None, snapshot=None):
 
         survey_geometry_instance.shell(path_instance, nproc=64, todo=3)
 
-        out_fits = os.path.join(path_instance.dir_out, f"cutsky_ic_{in_fol_temp}{phase}.fits")
-        stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="ic", ngc_sgc_tot="TOT", seed=i)
+        out_fits = os.path.join(path_instance.dir_out, f"cutsky_proto_{in_fol_temp}{phase}.fits")
+        stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="proto", ngc_sgc_tot="TOT", seed=i)
 
 def cutsky_ABACUS(args, galtype=None, gal_in_name=None, redshift=None, snapshot=None):
     in_fol_temp = "AbacusSummit_base_c000_ph"

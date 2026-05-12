@@ -110,7 +110,7 @@ class SurveyGeometry():
         if self.mock_random_ic is None:
             self.mock_random_ic = config.get('sim', 'mock_random_ic')
 
-        if self.mock_random_ic != "ic":
+        if self.mock_random_ic != "ic" and self.mock_random_ic != 'proto':
             if galtype in ("LRG", "LRG_main"):
                 self.tracer_id = 0
             elif galtype == "ELG":
@@ -253,7 +253,7 @@ class SurveyGeometry():
         foot_bit_5 = apply_footprint(ra, dec, 5)
 
         print("INFO: AQUI QUE PASA")
-        if self.mock_random_ic != "ic":
+        if self.mock_random_ic != "ic" and self.mock_random_ic != "proto":
             down_bit, ran_arr = self.downsample(z_cosmo, n_mean, radec=[ra, dec])
 
             out_arr = np.bitwise_or(np.bitwise_or(foot_bit_0, foot_bit_1), down_bit)
@@ -269,7 +269,7 @@ class SurveyGeometry():
             data = f['galaxy']
             print('here STATUS', data['STATUS'][()])
 
-        if self.mock_random_ic != "ic":
+        if self.mock_random_ic != "ic" and self.mock_random_ic != "proto":
             if "RAN_NUM_0_1" in data.keys():
                 print("WARNING: RAN_NUM_0_1 EXISTS. New RAN_NUM_0_1 has not been written.")
             else:

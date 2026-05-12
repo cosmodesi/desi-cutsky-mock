@@ -111,7 +111,7 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
 
     general_columns = [('RA', 'f4'), ('DEC', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4')]#, ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
 
-    if mock_random_ic != "ic":
+    if mock_random_ic != "ic" and mock_random_ic != "proto":
         general_columns += [('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
 
     if mock_random_ic == "mock":
@@ -120,7 +120,8 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
         add_columns = [('ID', 'i4')]
     elif mock_random_ic == "ic":
         add_columns = [('ONEplusDELTA', 'f4')]
-
+    elif mock_random_ic == "proto":
+        add_columns = [('HALO_ID', 'i8')]
     if survey_geometry_instance.galtype == "ELG":
         specific_columns = [('NZ_LOP', 'f4'), ('RAN_NUM_0_1_LOP', 'f4')]    
     elif survey_geometry_instance.galtype == "QSO":
