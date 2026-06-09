@@ -34,7 +34,7 @@ def cutsky_HOME(args, galtype=None, gal_in_name=None, redshift=None, cosmo='000'
     survey_geometry_instance.shell(path_instance, nproc=cpus, todo=3)
     #survey_geometry_instance.shell_series(path_instance, todo=3)
 
-    out_fits = path_instance.dir_out + f"cutsky_home_{galtype}_test.fits"
+    out_fits = path_instance.dir_out + f"cutsky_home_{galtype}.fits"
         
     stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=42)
 
@@ -59,8 +59,8 @@ def main():
     start = time.time()
 
 
-#    cutsky_HOME(args, galtype="LRG", gal_in_name="LRG", cosmo='000')
-    cutsky_HOME(args, galtype="ELG", gal_in_name="ELG", cosmo='000')
+    cutsky_HOME(args, galtype="LRG", gal_in_name="LRG", cosmo='000')
+#    cutsky_HOME(args, galtype="ELG", gal_in_name="ELG", cosmo='000')
     
 
 

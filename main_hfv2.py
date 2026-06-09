@@ -57,7 +57,7 @@ def cutsky_ABACUS_HF(args, galtype=None, basetag=None, snapshot=None, cosmo='000
     else:
         maxrange = phas
 
-    for i in range(0, 2):
+    for i in range(0, 25):
 #        if snapshot == 'sn0p950' and i<16:
 #            continue
         #    continue
@@ -96,29 +96,31 @@ def cutsky_ABACUS_HF_array(args, galtype=None, basetag=None, snapshot=None, cosm
         maxrange = phas
 
     i = realization
-    #for i in range(12, 20):
+    for i in range(4, 25):
 #        if snapshot == 'sn0p950' and i<16:
 #            continue
         #    continue
-    phase = str(int(i)).zfill(3)
-    print(phase)
+        phase = str(int(i)).zfill(3)
+        print(phase)
         #in_part_path = "{redshift}/" #+ f"/{in_fol_temp}{phase}/"
-    input_name = galtype + "_real_space.sub{subbox}.fits.gz"
+        input_name = galtype + "_real_space.sub{subbox}.fits.gz"
 
 
-    out_part_path = f"/{snapshot}/{basetag}/{in_fol_temp}{phase}/"		
-    output_name = galtype + "_ph" + phase + "_shell_{shellnum}.hdf5"
+        out_part_path = f"/{snapshot}/{basetag}/{in_fol_temp}{phase}/"		
+        output_name = galtype + "_ph" + phase + "_shell_{shellnum}.hdf5"
 
-    path_instance = Paths(config_file, args, input_name, out_part_path, output_name, phase=phase, cosmo=cosmo, basetag=basetag, snapshot=snapshot)
-    lightcone_instance = LightCone(config_file, args, cosmoprimo=path_instance.return_cosmoprimo(), cosmo=cosmo)
-    lightcone_instance.generate_shells(path_instance, redshift=snapshot, cutsky=True, nproc=cpus, n_subboxes=64, cat_seed=i, phase=phase)
+        path_instance = Paths(config_file, args, input_name, out_part_path, output_name, phase=phase, cosmo=cosmo, basetag=basetag, snapshot=snapshot)
+        out_fits = path_instance.dir_out + f"/{snapshot}/cutsky_{galtype}_{snapshot}_{basetag}_{in_fol_temp}{phase}.fits"
+        if os.path.isfile(out_fits):
+            continue
+        lightcone_instance = LightCone(config_file, args, cosmoprimo=path_instance.return_cosmoprimo(), cosmo=cosmo)
+        lightcone_instance.generate_shells(path_instance, redshift=snapshot, cutsky=True, nproc=cpus, n_subboxes=64, cat_seed=i, phase=phase)
 
-    survey_geometry_instance.shell(path_instance, nproc=cpus, todo=3)
+        survey_geometry_instance.shell(path_instance, nproc=cpus, todo=3)
         ##survey_geometry_instance.shell_series(path_instance, todo=3)
 
-    out_fits = path_instance.dir_out + f"/{snapshot}/cutsky_{galtype}_{snapshot}_{basetag}_{in_fol_temp}{phase}.fits"
     
-    stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
+        stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
 
 
 
@@ -186,13 +188,15 @@ def main():
         for type_ in ['base_conf_nfwexp']:
             cutsky_ABACUS_HF(args, galtype="ELG", basetag=type_, snapshot=snap)
     '''
-    for snap in ['sn0p500', 'sn0p725', 'sn0p950']:
-        for type_ in ['base_B']:
-            cutsky_ABACUS_HF_array(args, galtype="LRG", basetag=type_, snapshot=snap, realization=args.rea)
+    for snap in ['sn1p400']:
+    #for snap in ['sn0p950']:
+    #for snap in ['sn0p500', 'sn0p725', 'sn0p950']:
+        for type_ in ['base_dv']:
+            cutsky_ABACUS_HF_array(args, galtype="QSO", basetag=type_, snapshot=snap, realization=args.rea)
             #cutsky_ABACUS_HF(args, galtype="QSO", basetag=type_, snapshot=snap)
-    cutsky_ABACUS_HF_array(args, galtype="QSO", basetag='base', snapshot='sn1p550', realization=args.rea)
-    cutsky_ABACUS_HF_array(args, galtype="ELG", basetag='base_conf_nfwexp', snapshot='sn0p950', realization=args.rea)
-    cutsky_ABACUS_HF_array(args, galtype="ELG", basetag='base_conf_nfwexp', snapshot='sn1p475', realization=args.rea)
+    #cutsky_ABACUS_HF_array(args, galtype="QSO", basetag='base', snapshot='sn1p550', realization=args.rea)
+    #cutsky_ABACUS_HF_array(args, galtype="ELG", basetag='base_conf_nfwexp', snapshot='sn0p950', realization=args.rea)
+    #cutsky_ABACUS_HF_array(args, galtype="ELG", basetag='base_conf_nfwexp', snapshot='sn1p475', realization=args.rea)
     
     '''
 #    cutsky_ABACUS_HF(args, galtype="QSO", basetag='base', snapshot='sn1p850')

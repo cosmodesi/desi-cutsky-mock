@@ -61,7 +61,7 @@ class Paths():
         if self.dir_in is None:
             self.dir_in      =  config.get('dir', 'dir_in')
 
-        self.dir_out     = self.dir_out.format(phase=phase, cosmo=cosmo)
+        self.dir_out     = self.dir_out.format(phase=phase, cosmo=cosmo, basetag=basetag, snap=snapshot)
 
         self.shells_out_path = self.create_outpath()
 

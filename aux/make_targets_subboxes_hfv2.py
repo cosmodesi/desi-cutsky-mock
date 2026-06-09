@@ -108,10 +108,10 @@ targ = 'QSO'
 
 #filetosave = open('lrg_list.txt','w')
 print('TARG', targ)
-for i in range(12, 13):
+for i in range(4, 25):
     print('realization', i)
-#    for sn in ['1p850']:  #QSO
-    for sn in ['0p950', '1p250', '1p550', '1p850']:  #QSO
+    for sn in ['1p400']:  #QSO
+#    for sn in ['0p950', '1p250', '1p550', '1p850']:  #QSO
 #    for sn in ['1p175']:  #ELG
     #for sn in ['0p950', '1p175', '1p475']:  #ELG
     #for sn in ['0p500', '0p725', '0p950']: #LRG
@@ -119,7 +119,7 @@ for i in range(12, 13):
         #for typ in ['base_B','base']: #LRG
 #            print('type fit', typ)
 #        for typ in ['base_B','base_B_dv','base','base_dv']: #LRG
-        for typ in ['base']: #QSO
+        for typ in ['base_dv']: #QSO
             #print('type fit', typ)
         #for typ in ['base_conf_nfwexp']: #ELG
             filename = f'abacus_HF_{targ}_{sn}_DR2_v2.0_AbacusSummit_base_c000_ph{str(int(i)).zfill(3)}_{typ}_clustering.dat.h5'

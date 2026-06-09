@@ -173,23 +173,24 @@ class LightCone():
 
         px    = data['x']
         py    = data['y']
-        pz    =	data['z']
-        #pz    =	data['zreal']
+        pz    =	data['zreal']
+        #pz    =	data['z']
         ngalbox = len(px)
 
         if self.mock_random_ic == "mock":
-            vx    = data['vx']
-            vy    = data['vy']
             vz    = data['vz']
+            vx    = data['vx'] #np.zeros_like(vz) #data['vz']
+            vy    = data['vy'] #np.zeros_like(vz)
+            
             idhost = data['IDcen']
-            #idhost = data['idhost']
+            rvir = data['Rvir']
             vpeak = data['vdispp']
-            #vpeak = data['Vpeak']
             vpeakhost = data['Vpeakhost']
-            logmhost = data['logMcen']
-            #logmhost = data['logMhost']
+            logmcen = data['logMcen']
             sat = data['sat']
-#IDcen', 'Rvir', 'Vpeakhost', 'logMcen', 'sat', 'vdispp'            
+            logmstar = data['logMstar']
+
+#'IDcen', 'Rvir', 'Vpeakhost', 'logMcen', 'logMstar', 'sat', 'vdispp', 'vz', 'x', 'y', 'z', 'zreal'
 
         elif self.mock_random_ic == "random":
             id_ = data["id"]
@@ -210,8 +211,8 @@ class LightCone():
         tot_aux4 = np.array([])
         tot_aux5 = np.array([])
         tot_aux6 = np.array([])
-        #tot_aux7 = np.array([])
-        #tot_aux8 = np.array([])
+        tot_aux7 = np.array([])
+        tot_aux8 = np.array([])
 
         [axx, axy, axz, ayx, ayy, ayz, azx, azy, azz] = self.rotation_matrix
 
@@ -276,14 +277,16 @@ class LightCone():
 
                             vlos    = ne.evaluate("qx * ux + qy * uy + qz * uz")
                             dz      = ne.evaluate("(vlos / clight) * (1 + zp)")
+                            
                             tot_aux = np.append(tot_aux, zp + dz)
                             tot_aux2 = np.append(tot_aux2, idhost[idx])
                             tot_aux3 = np.append(tot_aux3, vpeak[idx])
                             tot_aux4 = np.append(tot_aux4, vpeakhost[idx])
-                            tot_aux5 = np.append(tot_aux5, logmhost[idx])
+                            tot_aux5 = np.append(tot_aux5, logmcen[idx])
                             tot_aux6 = np.append(tot_aux6, sat[idx])
-#                            tot_aux7 = np.append(tot_aux7, vdispp[idx])
-
+                            tot_aux7 = np.append(tot_aux7, rvir[idx])
+                            tot_aux8 = np.append(tot_aux8, logmstar[idx])
+                        
 
                         elif self.mock_random_ic == "random":
                             tot_aux = np.append(tot_aux, id_[idx])
@@ -297,8 +300,8 @@ class LightCone():
                         totdec  = np.append(totdec, dec)
                         totz    = np.append(totz  , zp)
 
-        return totra, totdec, totz, [tot_aux, tot_aux2, tot_aux3, tot_aux4, tot_aux5, tot_aux6], ngalbox
-        #return totra, totdec, totz, [tot_aux, tot_aux2, tot_aux3, tot_aux4, tot_aux5, tot_aux6, tot_aux7], ngalbox
+        #return totra, totdec, totz, [tot_aux, tot_aux2, tot_aux3, tot_aux4, tot_aux5, tot_aux6], ngalbox
+        return totra, totdec, totz, [tot_aux, tot_aux2, tot_aux3, tot_aux4, tot_aux5, tot_aux6, tot_aux7, tot_aux8], ngalbox
 
 
     def getnearestsnap(self, zmid):
@@ -332,8 +335,8 @@ class LightCone():
         ra0, dec0, zz0, aux0, ngalbox = self.convert_xyz2rdz(data, prefix, chilow, chiupp)
 
 
-        shell_subbox_dict = {"ra0": ra0, "dec0": dec0, "zz0": zz0, "aux0": aux0[0], "aux2": aux0[1], "aux3": aux0[2], "aux4": aux0[3], "aux5": aux0[4], "aux6": aux0[5]}
-        #shell_subbox_dict = {"ra0": ra0, "dec0": dec0, "zz0": zz0, "aux0": aux0[0], "aux2": aux0[1], "aux3": aux0[2], "aux4": aux0[3], "aux5": aux0[4], "aux6": aux0[5], "aux7": aux0[6]}
+        #shell_subbox_dict = {"ra0": ra0, "dec0": dec0, "zz0": zz0, "aux0": aux0[0], "aux2": aux0[1], "aux3": aux0[2], "aux4": aux0[3], "aux5": aux0[4], "aux6": aux0[5]}
+        shell_subbox_dict = {"ra0": ra0, "dec0": dec0, "zz0": zz0, "aux0": aux0[0], "aux2": aux0[1], "aux3": aux0[2], "aux4": aux0[3], "aux5": aux0[4], "aux6": aux0[5], "aux7": aux0[6], "aux8": aux0[7]}
         return_dict[subbox] = shell_subbox_dict
 
         return_dict["NGAL" + str(subbox)] = ngalbox
@@ -422,7 +425,8 @@ class LightCone():
             aux4_array = np.zeros(n_gal_shell_all_subboxes)
             aux5_array = np.zeros(n_gal_shell_all_subboxes)
             aux6_array = np.zeros(n_gal_shell_all_subboxes)
-#            aux7_array = np.zeros(n_gal_shell_all_subboxes)
+            aux7_array = np.zeros(n_gal_shell_all_subboxes)
+            aux8_array = np.zeros(n_gal_shell_all_subboxes)
             counter_ngal = 0
 
             ### Fill the arrays
@@ -443,7 +447,8 @@ class LightCone():
                 aux4_array[index_i: index_f] = shell_subbox_dict["aux4"]
                 aux5_array[index_i: index_f] = shell_subbox_dict["aux5"]
                 aux6_array[index_i: index_f] = shell_subbox_dict["aux6"]
-#                aux7_array[index_i: index_f] = shell_subbox_dict["aux7"]
+                aux7_array[index_i: index_f] = shell_subbox_dict["aux7"]
+                aux8_array[index_i: index_f] = shell_subbox_dict["aux8"]
 
                 index_i = index_f
 
@@ -465,9 +470,12 @@ class LightCone():
                     out_file.create_dataset('galaxy/IDHOST',   data=aux2_array, dtype=np.int64)
                     out_file.create_dataset('galaxy/VPEAK',   data=aux3_array, dtype=np.float32)
                     out_file.create_dataset('galaxy/VPEAKHOST',   data=aux4_array, dtype=np.float32)
-                    out_file.create_dataset('galaxy/LOGMHOST',   data=aux5_array, dtype=np.float32)
+                    out_file.create_dataset('galaxy/LOGMCEN',   data=aux5_array, dtype=np.float32)
                     out_file.create_dataset('galaxy/SAT',   data=aux6_array, dtype=np.int16)
-#                    out_file.create_dataset('galaxy/VDISPP',   data=aux7_array, dtype=np.float32)
+                    out_file.create_dataset('galaxy/RVIR',   data=aux7_array, dtype=np.float32)
+                    out_file.create_dataset('galaxy/LOGMSTAR',   data=aux8_array, dtype=np.float32)
+
+
                 elif self.mock_random_ic == "random":
                     out_file.create_dataset('galaxy/ID',      data=aux0_array, dtype=np.int32)
                 elif self.mock_random_ic == "ic":
