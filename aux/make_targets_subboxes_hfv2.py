@@ -29,8 +29,8 @@ def catalog_to_rsd(cat, los=np.array([0., 0., 1.])):
     shift  = (v_los / scalev)[:, None] * los
     pos_rsd = pos + shift
 
-    L = boxsize
-    pos_rsd = (pos_rsd + L / 2.0) % L - L / 2.0
+    #L = boxsize
+    #pos_rsd = (pos_rsd + L / 2.0) % L - L / 2.0
 
     return pos_rsd
 
@@ -39,8 +39,8 @@ def func(ifile, opath, targ):
         print(targ)
         if not os.path.isdir(opath):
             os.mkdir(opath)
-        if os.path.isfile(os.path.join(opath, f'{targ}_real_space.sub0.fits.gz')):
-            return 0
+        #if os.path.isfile(os.path.join(opath, f'{targ}_real_space.sub0.fits.gz')):
+        #    return 0
         cat = Catalog.read(ifile)
 
         test_cat = catalog_to_rsd(cat)
@@ -105,12 +105,22 @@ def func(ifile, opath, targ):
 
 
 targ = 'QSO'
-
 #filetosave = open('lrg_list.txt','w')
 print('TARG', targ)
-for i in range(4, 25):
+for i in [21,22,23,24]:
+    path_ = f'/global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v2.0/AbacusSummit_base_c000_ph{str(i).zfill(3)}/Boxes/QSO_lorentzian'
     print('realization', i)
-    for sn in ['1p400']:  #QSO
+    for j,name in enumerate([f'abacus_HF_QSO_0p950_QSO_fit_dv_AbacusSummit_base_c000_ph{str(i).zfill(3)}_base_lorentzian_dv_cat_fixed_z0.8_1.1_clustering.dat.h5',
+        f'abacus_HF_QSO_1p250_QSO_fit_dv_AbacusSummit_base_c000_ph{str(i).zfill(3)}_base_lorentzian_dv_cat_fixed_z1.1_1.4_clustering.dat.h5',
+        f'abacus_HF_QSO_1p475_QSO_fit_dv_AbacusSummit_base_c000_ph{str(i).zfill(3)}_base_lorentzian_dv_cat_fixed_z0.8_2.1_clustering.dat.h5',
+        f'abacus_HF_QSO_1p550_QSO_fit_dv_AbacusSummit_base_c000_ph{str(i).zfill(3)}_base_lorentzian_dv_cat_fixed_z1.4_1.7_clustering.dat.h5',
+        f'abacus_HF_QSO_1p850_QSO_fit_dv_AbacusSummit_base_c000_ph{str(i).zfill(3)}_base_lorentzian_dv_cat_fixed_z1.7_2.1_clustering.dat.h5']):
+            #if i==16 and j<3:
+            #    continue
+            input_path = os.path.join(path_, name)
+            output_path = os.path.join(path_, str(j))
+        
+        #QSO
 #    for sn in ['0p950', '1p250', '1p550', '1p850']:  #QSO
 #    for sn in ['1p175']:  #ELG
     #for sn in ['0p950', '1p175', '1p475']:  #ELG
@@ -119,12 +129,12 @@ for i in range(4, 25):
         #for typ in ['base_B','base']: #LRG
 #            print('type fit', typ)
 #        for typ in ['base_B','base_B_dv','base','base_dv']: #LRG
-        for typ in ['base_dv']: #QSO
+        #for typ in ['base_dv']: #QSO
             #print('type fit', typ)
         #for typ in ['base_conf_nfwexp']: #ELG
-            filename = f'abacus_HF_{targ}_{sn}_DR2_v2.0_AbacusSummit_base_c000_ph{str(int(i)).zfill(3)}_{typ}_clustering.dat.h5'
-            input_path = f'/global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v2.0/AbacusSummit_base_c000_ph{str(int(i)).zfill(3)}/Boxes/{targ}/{filename}'
-            output_path = f'/global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v2.0/AbacusSummit_base_c000_ph{str(int(i)).zfill(3)}/Boxes/{targ}/sn{sn}/{typ}'
+#            filename = f'abacus_HF_{targ}_{sn}_DR2_v2.0_AbacusSummit_base_c000_ph{str(int(i)).zfill(3)}_{typ}_clustering.dat.h5'
+#            input_path = f'/global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v2.0/AbacusSummit_base_c000_ph{str(int(i)).zfill(3)}/Boxes/{targ}/{filename}'
+#            output_path = f'/global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v2.0/AbacusSummit_base_c000_ph{str(int(i)).zfill(3)}/Boxes/{targ}/sn{sn}/{typ}'
             os.makedirs(output_path, exist_ok=True)
 #            filetosave.write('%s %s %s\n' %(input_path, output_path, targ))
             print(input_path, output_path)

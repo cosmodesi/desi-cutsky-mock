@@ -243,11 +243,11 @@ class SurveyGeometry():
         data = f['galaxy']
         ra = data['RA'][()]
         dec = data['DEC'][()]
-        z_cosmo = data['Z_RSD'][()]
+        #z_cosmo = data['Z_RSD'][()]
 #        haloid = data['HALOID']
 #        halomass = data['HALOMASS']
 #        iscentral = data['ISCENTRAL']
-        ##TEMPz_cosmo = data['Z_COSMO'][()]
+        z_cosmo = data['Z_COSMO'][()]
         foot_bit_0 = apply_footprint(ra, dec, 0)
         foot_bit_1 = apply_footprint(ra, dec, 1)
         foot_bit_4 = apply_footprint(ra, dec, 4)
@@ -261,10 +261,11 @@ class SurveyGeometry():
             out_arr = np.bitwise_or(np.bitwise_or(foot_bit_0, foot_bit_1), foot_bit_2)
 
         out_arr = out_arr.astype(np.int32)
-##TEMP        if "STATUS" in data.keys():
-##TEMP            print("WARNING: STATUS EXISTS. New STATUS has not been written.")
-##TEMP        else:
-        f.create_dataset('galaxy/STATUS', data=out_arr,  dtype=np.int32)
+        if "STATUS" in data.keys():
+            print("WARNING: STATUS EXISTS. New STATUS has not been written.")
+        else:
+            print('ok')
+            f.create_dataset('galaxy/STATUS', data=out_arr,  dtype=np.int32)
 
         if self.mock_random_ic != "ic":
             if "RAN_NUM_0_1" in data.keys():

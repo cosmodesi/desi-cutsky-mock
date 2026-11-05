@@ -128,7 +128,7 @@ def func(ifile, opath, targ):
 
 
 #func('/global/cfs/projectdirs/desi/users/gfavole/aurelio/cubic_mock_y3/ELG_hod_boost_mock.h5', '/global/cfs/projectdirs/desi/users/gfavole/aurelio/cubic_mock_y3/ELG_v2', 'ELG')
-func('/global/cfs/projectdirs/desi/users/gfavole/aurelio/cubic_mock_y3/improved/LRG_hod_boost_mock.h5', '/global/cfs/projectdirs/desi/users/gfavole/aurelio/cubic_mock_y3/improved/LRG_boost/', 'LRG')
+func('/global/cfs/projectdirs/desi/users/gfavole/aurelio/cubic_mock_y3/final/LRG1_mock_ph000.h5', '/global/cfs/projectdirs/desi/users/gfavole/aurelio/cubic_mock_y3/final/divided/LRG1_mock_ph000/', 'LRG')
 #func('/global/cfs/projectdirs/desi/mocks/cai/test_HOMe/ELG_mock.h5', '/global/cfs/projectdirs/desi/mocks/cai/test_HOMe/ELG', 'ELG')
 #pool = sharedmem.MapReduce(np=25)
 #        #with Pool() as pool:#Pool(processes=nproc) as pool:

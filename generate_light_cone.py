@@ -141,10 +141,15 @@ class LightCone():
         ntiles = int(np.ceil(chiupp / box_length))
         print(prefix + "tiling [%dx%dx%d]" % (2 * ntiles, 2 * ntiles, 2 * ntiles))
         print(prefix + 'Generating map for halos in the range [%3.f - %.3f Mpc/h]' % (chilow, chiupp))
+        try:
+            px    = data['x']
+            py    = data['y']
+            pz    =	data['z']
+        except:
+            px    = data['X']
+            py    = data['Y']
+            pz    = data['Z']
 
-        px    = data['x']
-        py    = data['y']
-        pz    =	data['z']
         ngalbox = len(px)
 
         if self.mock_random_ic == "mock":
@@ -154,7 +159,11 @@ class LightCone():
         elif self.mock_random_ic == "random":
             id_ = data["id"]
         elif self.mock_random_ic == "ic":
-            dens = data["density"]
+            try:
+                dens = data["density"]
+            except:
+                dens = data["Density"]
+
         else:
             print(f"ERROR!!! generate_lc, convert_xyz2rdz: You should choose between: mock, random or ic. You have chosen {self.mock_random_ic}")
 

@@ -38,36 +38,40 @@ def LC_ABACUS(args, galtype=None):
     stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT")
 
 def cutsky_ic_ABACUS(args, galtype=None, redshift=None, snapshot=None):
-    in_fol_temp = "AbacusSummit_base_c000_ph"
-    if galtype == 'LRG':
-        config_file = f"./ABACUS/config/config_ABACUS_ic_LRG.ini"
-    elif galtype == 'ELG':
-        config_file = f"./ABACUS/config/config_ABACUS_ic_ELG.ini"
-    elif galtype == 'QSO':
-        config_file = f"./ABACUS/config/config_ABACUS_ic_QSO.ini"
+    #in_fol_temp = "phase"
+    #f galtype == 'LRG':
+    config_file = f"./ABACUS/config/config_ABACUS_ic.ini"
+    #elif galtype == 'ELG':
+    #    config_file = f"./ABACUS/config/config_ABACUS_ic_ELG.ini"
+    #elif galtype == 'QSO':
+    #    config_file = f"./ABACUS/config/config_ABACUS_ic_QSO.ini"
 
     ######### Instances
     lightcone_instance = LightCone(config_file, args)
     # survey_geometry_instance = SurveyGeometry(config_file, args, galtype=galtype)
 
     # ######### CutSky
-    for i in range(0, 1):
+    for i in range(1, 25):
         phase = str(int(i)).zfill(3)
 
-        in_part_path = "{redshift}/" + f"/{in_fol_temp}{phase}/"
-        input_name = "ic_dens_576_SB{subbox}.fits"
+        in_part_path = f"phase{phase}/"
 
-        out_part_path = f"/{redshift}/{in_fol_temp}{phase}/"		
+        #in_part_path = "{redshift}/" + f"/{in_fol_temp}{phase}/"
+        input_name = "IC_real_space.sub{subbox}.fits.gz"
+
+        out_part_path = f"phase{phase}/"		
         output_name = "ic_snap{snapshot}_ph" + phase + "_shell_{shellnum}.hdf5"
 
         path_instance = Paths(config_file, args, in_part_path, input_name, out_part_path, output_name)
+        
+        survey_geometry_instance = SurveyGeometry(config_file, args, galtype = galtype)
 
-        lightcone_instance.generate_shells(path_instance, snapshot=snapshot, redshift=redshift, cutsky=True, nproc=6, n_subboxes=64, cat_seed=i)
+        lightcone_instance.generate_shells(path_instance, snapshot=snapshot, redshift=redshift, cutsky=True, nproc=64, n_subboxes=64, cat_seed=i)
 
         survey_geometry_instance.shell(path_instance, nproc=64, todo=3)
 
-        out_fits = path_instance.dir_out + f"/{redshift}/fits/cutsky_{galtype}_{redshift}_{in_fol_temp}{phase}.fits"
-        stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="mock", ngc_sgc_tot="TOT", seed=i)
+        out_fits = path_instance.dir_out + f"/phase{phase}/cutsky_{galtype}_phase{phase}.fits"
+        stack_shells(survey_geometry_instance, inpath=path_instance.shells_out_path, out_file=out_fits, mock_random_ic="ic", ngc_sgc_tot="TOT", seed=i)
 
 def cutsky_ABACUS(args, galtype=None, gal_in_name=None, redshift=None, snapshot=None):
     in_fol_temp = "AbacusSummit_base_c000_ph"
@@ -303,9 +307,9 @@ def main():
 #    cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELG",        redshift="z0.950", snapshot=16)
 #    cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELG",        redshift="z1.100", snapshot=16)
 #    cutsky_ABACUS(args, galtype="ELG", gal_in_name="ELG",        redshift="z1.325", snapshot=16)
-    cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.100", snapshot=12)
+    #cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.100", snapshot=12)
 #    cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.400", snapshot=12)
-    cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.700", snapshot=12)
+    #cutsky_ABACUS(args, galtype="QSO", gal_in_name="QSO",        redshift="z1.700", snapshot=12)
 
 
     ### Abacus 500Mpc
@@ -324,7 +328,7 @@ def main():
     # random_ABACUS(args, galtype="ELG", snapshot=16, gal_in_name="ELGlowDens")
 
     ### IC Abacus 2Gpc (To BE Tested)
-    #cutsky_ic_ABACUS(args, galtype="LRG", redshift="", snapshot=576)
+    cutsky_ic_ABACUS(args, galtype="IC", redshift="", snapshot=576)
     #cutsky_ic_ABACUS(args, galtype="ELG", redshift="", snapshot=576)
     #cutsky_ic_ABACUS(args, galtype="QSO", redshift="", snapshot=576)
 

@@ -111,8 +111,8 @@ def stack_shells(survey_geometry_instance, inpath="test", out_file="test", seed=
     counter_TOT, counter_NGC, counter_SGC = count(files)
     print(f"The number of tracers: TOT={counter_TOT}; NGC={counter_NGC}; SGC={counter_SGC}")
 
-    general_columns = [('RA', 'f8'), ('DEC', 'f8'), ('Z_BAD', 'f4'), ('STATUS', 'i4')]#, ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
-    #general_columns = [('RA', 'f4'), ('DEC', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4')]#, ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
+    #general_columns = [('RA', 'f8'), ('DEC', 'f8'), ('Z_BAD', 'f4'), ('STATUS', 'i4')]#, ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
+    general_columns = [('RA', 'f4'), ('DEC', 'f4'), ('Z_COSMO', 'f4'), ('STATUS', 'i4')]#, ('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]
 
     if mock_random_ic != "ic":
         general_columns += [('RAW_NZ', 'f4'), ('RAN_NUM_0_1', 'f4'),('NZ', 'f4')]

@@ -61,11 +61,11 @@ class Paths():
         if self.dir_in is None:
             self.dir_in      =  config.get('dir', 'dir_in')
 
-        self.dir_out     = self.dir_out.format(phase=phase, cosmo=cosmo, basetag=basetag, snap=snapshot)
+        self.dir_out     = self.dir_out.format(phase=phase, cosmo=cosmo, basetag=basetag, snap=snapshot, ffile=snapshot)
 
         self.shells_out_path = self.create_outpath()
 
-        self.input_file       = self.dir_in.format(phase=phase, cosmo=cosmo, basetag=basetag, snap=snapshot) + self.input_name		
+        self.input_file       = self.dir_in.format(phase=phase, cosmo=cosmo, basetag=basetag, snap=snapshot, ffile=snapshot) + self.input_name		
         self.output_file      = self.shells_out_path + self.output_name
 
     def create_outpath(self):
@@ -192,6 +192,7 @@ class LightCone():
             haloid = data['HALO_ID']
             halomass = data['MASS']
             iscentral = data['ISCENTRAL']
+            vsmear = data['VSMEAR']
 
         elif self.mock_random_ic == "random":
             id_ = data["id"]
@@ -430,14 +431,14 @@ class LightCone():
                 dec0_array[index_i: index_f] = shell_subbox_dict["dec0"]
                 zz0_array[index_i: index_f]  = shell_subbox_dict["zz0"]
                 aux0_array[index_i: index_f] = shell_subbox_dict["aux0"]
-                aux2_array[index_i: index_f] = shell_subbox_dict["aux2"]
-                aux3_array[index_i: index_f] = shell_subbox_dict["aux3"]
-                aux4_array[index_i: index_f] = shell_subbox_dict["aux4"]
+                #TEMPaux2_array[index_i: index_f] = shell_subbox_dict["aux2"]
+                #TEMPaux3_array[index_i: index_f] = shell_subbox_dict["aux3"]
+                #TEMPaux4_array[index_i: index_f] = shell_subbox_dict["aux4"]
 
                 index_i = index_f
 
             out_file_name_tmp  = out_file_name + "_tmp"
-            aux4_array = np.asarray(aux4_array, dtype=bool)
+            #TEMPaux4_array = np.asarray(aux4_array, dtype=bool)
 
             with h5py.File(out_file_name_tmp, 'w') as out_file:
                 out_file.create_group('galaxy')
