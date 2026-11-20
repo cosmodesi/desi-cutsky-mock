@@ -35,7 +35,7 @@ class Paths():
 #    dir_out                         = /global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v2.0/AbacusSummit_base_c000_ph{phase}/CutSky/LRG/
 #dir_in                          = /global/cfs/projectdirs/desi/mocks/cai/abacus_HF/DR2_v2.0/AbacusSummit_base_c{cosmo}_ph{phase}/Boxes/LRG/{snap}/{basetag}/
 #config_file, args, input_name, out_part_path, output_name, phase=phase, cosmo=cosmo, basetag=basetag, snapshot=snapshot
-    def __init__(self, config_file, args, input_name, out_part_path, output_name, phase=None, cosmo='000', basetag=None, snapshot=None):
+    def __init__(self, config_file, args, input_name, out_part_path, output_name, phase=None, cosmo='000', basetag=None, snapshot=None, rea=None):
         config     = configparser.ConfigParser()
         config.read(config_file)
 
@@ -60,7 +60,8 @@ class Paths():
             self.dir_out     =  config.get('dir', 'dir_out')
         if self.dir_in is None:
             self.dir_in      =  config.get('dir', 'dir_in')
-
+        if rea is not None:
+            self.dir_in = os.path.join(self.dir_in, '%d/' % rea)
         self.dir_out     = self.dir_out.format(phase=phase, cosmo=cosmo, basetag=basetag, snap=snapshot, ffile=snapshot)
 
         self.shells_out_path = self.create_outpath()
@@ -180,7 +181,9 @@ class LightCone():
         if calc_rsd:
             pz    = data['Z']
         else:
+            #pz    =	data['Z']
             pz    =	data['RSDZ']
+            #pzrsd  =    data['RSDZ']
 
     
         ngalbox = len(px)
